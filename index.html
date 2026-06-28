@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#13263F">
+<link rel="manifest" href="manifest.json">
+<title>巡檢通報系統</title>
+<style>
+  :root{
+    --ink:#101720; --ink-2:#3d4a59; --muted:#6b7888;
+    --line:#dfe4ea; --line-2:#eceff3;
+    --bg:#eef1f5; --surface:#ffffff; --surface-2:#f6f8fa;
+    --navy:#13263F; --navy-2:#1d4e89; --navy-ink:#0d3b66;
+    --amber:#d98414; --amber-bg:#fbf0dd;
+    --green:#157f3b; --green-bg:#e3f3e8;
+    --blue:#1f6fb8; --blue-bg:#e4f0fa;
+    --red:#c5283d; --red-bg:#fbe6e9;
+    --radius:14px; --radius-sm:10px;
+    --shadow:0 1px 2px rgba(16,23,32,.06),0 4px 16px rgba(16,23,32,.06);
+    --tap:54px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",
+      "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font); color:var(--ink); background:var(--bg);
+    font-size:16px; line-height:1.45; letter-spacing:.01em;
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:16px}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:40;background:var(--navy);color:#fff;
+    padding:calc(env(safe-area-inset-top) + 12px) 18px 12px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:0 2px 12px rgba(16,23,32,.16);
+  }
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .mark{
+    width:34px;height:34px;border-radius:9px;flex:none;
+    background:linear-gradient(150deg,#2c6db5,#13263F);
+    display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .mark svg{width:19px;height:19px}
+  .brand b{font-size:16.5px;font-weight:750;letter-spacing:.02em;white-space:nowrap}
+  .brand small{display:block;font-size:11px;color:#aebfd4;font-weight:500;letter-spacing:.06em}
+  .net{
+    display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.1);
+    white-space:nowrap;
+  }
+  .net .dot{width:8px;height:8px;border-radius:50%;background:#54d07f;box-shadow:0 0 0 3px rgba(84,208,127,.22)}
+  .net.off .dot{background:#f0a33c;box-shadow:0 0 0 3px rgba(240,163,60,.22)}
+
+  /* ---------- Layout ---------- */
+  .wrap{max-width:680px;margin:0 auto;padding:16px}
+  .view{display:none}
+  .view.active{display:block;animation:fade .22s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card+.card{margin-top:14px}
+  .card-h{padding:15px 16px 13px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:9px}
+  .card-h .ic{width:26px;height:26px;border-radius:7px;background:var(--navy-bg,#e8eef6);display:grid;place-items:center;flex:none;color:var(--navy-2)}
+  .card-h h2{font-size:15px}
+  .card-h h2 span{display:block;font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.04em;margin-top:1px}
+  .card-b{padding:16px}
+
+  /* ---------- Form ---------- */
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  label.lbl{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:var(--ink-2);margin-bottom:7px}
+  label.lbl .req{color:var(--red);font-weight:700}
+  label.lbl .opt{color:var(--muted);font-weight:500;font-size:11px;letter-spacing:.04em}
+  input[type=text],input[type=date],select,textarea{
+    width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .15s,background .15s;
+  }
+  textarea{resize:vertical;min-height:74px;line-height:1.5}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy-2);background:#fff}
+  select{appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236b7888' stroke-width='2.4' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:40px}
+  .field.err input,.field.err select,.field.err textarea{border-color:var(--red);background:var(--red-bg)}
+  .errmsg{display:none;color:var(--red);font-size:12px;font-weight:600;margin-top:6px}
+  .field.err .errmsg{display:block}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+  /* category chips */
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .chip{
+    display:flex;align-items:center;gap:9px;padding:13px 12px;border:1.5px solid var(--line);
+    border-radius:var(--radius-sm);background:var(--surface-2);font-size:14px;font-weight:600;color:var(--ink-2);
+    transition:.15s;user-select:none;
+  }
+  .chip .box{width:20px;height:20px;border-radius:6px;border:2px solid #c2cad4;flex:none;display:grid;place-items:center;transition:.15s}
+  .chip .box svg{width:13px;height:13px;opacity:0;color:#fff;transition:.15s}
+  .chip.on{border-color:var(--navy-2);background:#eef4fb;color:var(--navy-ink)}
+  .chip.on .box{background:var(--navy-2);border-color:var(--navy-2)}
+  .chip.on .box svg{opacity:1}
+
+  /* location */
+  .loc{display:flex;align-items:stretch;gap:9px}
+  .loc .gps{
+    flex:none;width:50px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);
+    display:grid;place-items:center;color:var(--navy-2)
+  }
+  .loc .gps.busy{animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.5}}
+  .coord{font-size:12px;color:var(--green);font-weight:650;margin-top:7px;display:none;align-items:center;gap:5px}
+  .coord.show{display:flex}
+  .coord.fail{color:var(--amber)}
+
+  /* media */
+  .media-add{
+    display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:16px;
+    border:1.7px dashed #c2cdd9;border-radius:var(--radius-sm);background:var(--surface-2);
+    color:var(--navy-2);font-weight:650;font-size:14.5px;
+  }
+  .media-add svg{width:21px;height:21px}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:11px}
+  .thumbs:empty{display:none}
+  .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#0b1119;border:1px solid var(--line)}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .vtag{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.62);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:.04em}
+  .thumb .del{position:absolute;top:4px;right:4px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(17,23,32,.66);color:#fff;display:grid;place-items:center;backdrop-filter:blur(2px)}
+  .thumb .del svg{width:14px;height:14px}
+
+  /* buttons */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:var(--tap);
+    border:none;border-radius:12px;font-size:16px;font-weight:700;letter-spacing:.02em;transition:.12s}
+  .btn:active{transform:scale(.985)}
+  .btn-primary{background:var(--navy-2);color:#fff;box-shadow:0 4px 14px rgba(29,78,137,.3)}
+  .btn-ghost{background:var(--surface);color:var(--ink-2);border:1.5px solid var(--line)}
+  .btn-amber{background:var(--amber);color:#fff;box-shadow:0 4px 14px rgba(217,132,20,.28)}
+  .btn svg{width:19px;height:19px}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+  .btn-row{display:flex;gap:10px;margin-top:18px}
+  .btn-row .btn{margin-top:0}
+
+  /* ---------- List ---------- */
+  .list-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 14px}
+  .list-head h2{font-size:18px}
+  .filters{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .fbtn{flex:none;padding:8px 14px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;
+    font-size:13px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+  .fbtn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .rec{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:14px 15px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start}
+  .rec .ph{width:58px;height:58px;border-radius:10px;flex:none;background:#0b1119;overflow:hidden;position:relative}
+  .rec .ph img{width:100%;height:100%;object-fit:cover}
+  .rec .ph.none{background:var(--surface-2);display:grid;place-items:center;color:var(--muted)}
+  .rec .body{flex:1;min-width:0}
+  .rec .row1{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .rec .no{font-size:12px;font-weight:700;color:var(--navy-2);font-variant-numeric:tabular-nums}
+  .rec .cat{font-size:15px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rec .meta{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rec .tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:.03em}
+  .tag.wait{background:var(--amber-bg);color:#9a5b06}
+  .tag.prog{background:var(--blue-bg);color:#155a92}
+  .tag.done{background:var(--green-bg);color:#0f5f2c}
+  .tag.sync{background:var(--surface-2);color:var(--muted)}
+  .tag.unsync{background:var(--red-bg);color:#9c1f30}
+  .empty{text-align:center;padding:64px 24px;color:var(--muted)}
+  .empty svg{width:46px;height:46px;opacity:.4;margin-bottom:14px}
+  .empty b{display:block;color:var(--ink-2);font-size:15px;margin-bottom:5px}
+
+  /* ---------- Detail ---------- */
+  .detail-cover{height:180px;border-radius:var(--radius);overflow:hidden;background:#0b1119;margin-bottom:14px;position:relative}
+  .detail-cover img,.detail-cover video{width:100%;height:100%;object-fit:cover}
+  .kv{display:flex;padding:11px 0;border-bottom:1px solid var(--line-2);font-size:14px}
+  .kv:last-child{border-bottom:none}
+  .kv .k{width:96px;flex:none;color:var(--muted);font-weight:600;font-size:13px}
+  .kv .v{flex:1;color:var(--ink);font-weight:550}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .gallery .g{aspect-ratio:1;border-radius:9px;overflow:hidden;background:#0b1119}
+  .gallery .g img,.gallery .g video{width:100%;height:100%;object-fit:cover}
+
+  /* ---------- Bottom nav ---------- */
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:rgba(255,255,255,.94);
+    backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--line);
+    display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom));}
+  .nav button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:6px 4px;color:var(--muted);font-size:11px;font-weight:650;border-radius:12px}
+  .nav button svg{width:23px;height:23px}
+  .nav button.on{color:var(--navy-2)}
+  .nav .mid{position:relative;top:-2px}
+  .nav .mid .fab{width:50px;height:50px;border-radius:16px;background:var(--navy-2);color:#fff;display:grid;place-items:center;
+    box-shadow:0 6px 18px rgba(29,78,137,.4);margin-bottom:2px}
+  .nav .mid .fab svg{width:26px;height:26px}
+
+  /* ---------- Toast ---------- */
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:90;
+    background:var(--ink);color:#fff;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);display:flex;align-items:center;gap:9px;max-width:88%;
+    opacity:0;pointer-events:none;transition:.25s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.show.up{transform:translateX(-50%) translateY(-2px)}
+  .toast svg{width:18px;height:18px;flex:none}
+  .toast.ok{background:#0f5f2c}.toast.warn{background:#9a5b06}.toast.err{background:#9c1f30}
+
+  /* sync banner */
+  .syncbar{display:none;align-items:center;gap:10px;background:var(--amber-bg);border:1px solid #f0d9af;
+    border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#7a4708}
+  .syncbar.show{display:flex}
+  .syncbar svg{width:18px;height:18px;flex:none}
+  .syncbar .sb-btn{margin-left:auto;background:var(--amber);color:#fff;border:none;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700}
+  .spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+  .settings-note{font-size:13px;color:var(--ink-2);background:var(--blue-bg);border:1px solid #cfe4f5;
+    border-radius:10px;padding:12px 13px;line-height:1.55;margin-bottom:16px}
+  .settings-note b{color:var(--navy-ink)}
+  .ok-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);
+    background:var(--green-bg);padding:4px 10px;border-radius:999px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    </span>
+    <div>
+      <b>巡檢通報系統</b>
+      <small>FIELD INSPECTION</small>
+    </div>
+  </div>
+  <div class="net" id="net"><span class="dot"></span><span id="netTxt">連線中</span></div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ NEW INSPECTION ============ -->
+  <section class="view active" id="view-new">
+    <div class="syncbar" id="syncbar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+      <span id="syncTxt">有 0 筆待上傳</span>
+      <button class="sb-btn" id="syncNow">立即上傳</button>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+        <h2>新增巡檢紀錄<span>NEW INSPECTION RECORD</span></h2>
+      </div>
+      <div class="card-b">
+
+        <div class="field">
+          <label class="lbl">所屬專案 <span class="opt">方便歸類</span></label>
+          <div style="display:flex;gap:9px">
+            <select id="i-project" style="flex:1"><option value="">未分類</option></select>
+            <button type="button" class="gps" id="quickProj" title="新增專案" style="width:50px;color:var(--amber)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="field" id="f-area">
+          <label class="lbl">行政區 <span class="req">*</span></label>
+          <select id="i-area"><option value="">請選擇行政區…</option></select>
+          <div class="errmsg">請選擇行政區</div>
+        </div>
+
+        <div class="field" id="f-loc">
+          <label class="lbl">位置（GPS） <span class="req">*</span></label>
+          <div class="loc">
+            <input type="text" id="i-landmark" placeholder="地標或路段，例：堤防 3K+200">
+            <button type="button" class="gps" id="gpsBtn" title="定位">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="coord" id="coord"></div>
+          <div class="errmsg">請完成 GPS 定位（或手動填寫座標）</div>
+        </div>
+
+        <div class="field" id="f-cat">
+          <label class="lbl">破損類別 <span class="req">*</span></label>
+          <div class="chips" id="catChips"></div>
+          <div class="errmsg">請至少選擇一項破損類別</div>
+        </div>
+
+        <div class="field">
+          <label class="lbl">破損狀況 <span class="req">*</span></label>
+          <textarea id="i-cond" placeholder="描述破損程度、範圍、影響，例：路面塌陷約 2m²，深度 30cm"></textarea>
+          <div class="errmsg">請填寫破損狀況</div>
+        </div>
+
+        <div class="field">
+          <label class="lbl">其他描述 <span class="opt">選填</span></label>
+          <textarea id="i-note" placeholder="補充說明、附近設施、建議處理方式…"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="lbl">現場照片 / 影片 <span class="req">*</span></label>
+          <button type="button" class="media-add" id="mediaBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg>
+            拍照或選擇影片
+          </button>
+          <input type="file" id="mediaInput" accept="image/*,video/*" capture="environment" multiple hidden>
+          <div class="thumbs" id="thumbs"></div>
+          <div class="errmsg">請至少上傳一張照片或影片</div>
+          <div class="hint" id="mediaHint" style="display:none"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="newReset" style="flex:0 0 40%">清除</button>
+          <button class="btn btn-primary" id="newSave">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            儲存紀錄
+          </button>
+        </div>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+  </section>
+
+  <!-- ============ LIST ============ -->
+  <section class="view" id="view-list">
+    <div class="list-head">
+      <h2>巡檢清單</h2>
+      <span id="listCount" class="rec-count" style="font-size:13px;color:var(--muted);font-weight:600"></span>
+    </div>
+    <div class="filters" id="filters">
+      <button class="fbtn on" data-f="all">全部</button>
+      <button class="fbtn" data-f="待改善">待改善</button>
+      <button class="fbtn" data-f="改善中">改善中</button>
+      <button class="fbtn" data-f="已改善">已改善</button>
+      <button class="fbtn" data-f="unsync">待上傳</button>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <select id="projFilter"><option value="all">所有專案</option><option value="none">未分類</option></select>
+    </div>
+    <div id="recList"></div>
+  </section>
+
+  <!-- ============ DETAIL ============ -->
+  <section class="view" id="view-detail"></section>
+
+  <!-- ============ PROJECTS ============ -->
+  <section class="view" id="view-proj">
+    <div class="list-head">
+      <h2>專案管理</h2>
+      <span id="projCount" style="font-size:13px;color:var(--muted);font-weight:600"></span>
+    </div>
+    <button class="btn btn-amber" id="newProjBtn" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>建立新專案
+    </button>
+    <div id="projList"></div>
+  </section>
+
+  <!-- ============ PROJECT FORM (sub-view) ============ -->
+  <section class="view" id="view-projform"></section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" id="view-set">
+    <div class="card">
+      <div class="card-h">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L14.5 2h-5l-.3 2.6a7 7 0 00-1.7 1l-2.4-1-2 3.4L3.1 11a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.3 2.4h5l.3-2.6a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6c.1-.3.1-.6.1-1z"/></svg></span>
+        <h2>設定<span>SETTINGS</span></h2>
+      </div>
+      <div class="card-b">
+        <div class="settings-note">
+          連線需填入 <b>Google Apps Script 網頁應用程式網址</b>，資料才會寫進你的 Google 試算表。離線時所有紀錄會先存在手機，回到收訊自動補傳。
+        </div>
+        <div class="field">
+          <label class="lbl">巡檢人員姓名 <span class="req">*</span></label>
+          <input type="text" id="s-name" placeholder="例：王承辦">
+        </div>
+        <div class="field">
+          <label class="lbl">Apps Script 網址 <span class="opt">連線後填</span></label>
+          <input type="text" id="s-url" placeholder="https://script.google.com/macros/s/.../exec">
+          <div class="hint">部署 Apps Script 後取得，貼上即可。可先空白離線使用。</div>
+          <span class="ok-pill" id="urlOk" style="display:none">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>已連線
+          </span>
+        </div>
+        <button class="btn btn-primary" id="setSave">儲存設定</button>
+        <div style="height:10px"></div>
+        <button class="btn btn-ghost" id="testConn">測試連線</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-b" style="font-size:13px;color:var(--muted);line-height:1.6">
+        本機暫存 <b id="localCount" style="color:var(--ink-2)">0</b> 筆紀錄。
+        資料同時保存在手機與 Google 試算表，清除瀏覽器資料前請先確認皆已上傳。
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav class="nav">
+  <button data-go="list" id="nav-list">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    清單
+  </button>
+  <button data-go="proj" id="nav-proj">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    專案
+  </button>
+  <button class="mid" data-go="new" id="nav-new">
+    <span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+    新增
+  </button>
+  <button data-go="set" id="nav-set">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>
+    設定
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ===================================================================
+   設定區 —— 可依縣市/單位自行調整下列清單
+   =================================================================== */
+const CONFIG = {
+  // 行政區清單（範例為新北市，請改成你的縣市）
+  AREAS: ["板橋區","三重區","中和區","永和區","新莊區","新店區","土城區","蘆洲區",
+          "汐止區","樹林區","鶯歌區","三峽區","淡水區","瑞芳區","五股區","泰山區",
+          "林口區","八里區","深坑區","石碇區","坪林區"],
+  // 破損類別
+  CATEGORIES: ["一般道路破損","防汛道路破損","護岸破損","其他破損"],
+  // 影片大小上限（MB）—— 超過會提醒
+  VIDEO_MAX_MB: 25,
+  // 照片壓縮後最長邊（px）
+  IMG_MAX_EDGE: 1600,
+  IMG_QUALITY: 0.78,
+};
+
+/* ===================================================================
+   IndexedDB —— 離線資料儲存
+   =================================================================== */
+const DB_NAME="inspectDB", STORE="records", PROJ="projects";
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,2);
+    r.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(STORE)){
+        d.createObjectStore(STORE,{keyPath:"localId"}).createIndex("synced","synced");
+      }
+      if(!d.objectStoreNames.contains(PROJ)){
+        d.createObjectStore(PROJ,{keyPath:"id"});
+      }
+    };
+    r.onsuccess=e=>{db=e.target.result;res()};
+    r.onerror=e=>rej(e);
+  });
+}
+function tx(store,mode){return db.transaction(store,mode).objectStore(store);}
+// 紀錄
+function dbPut(rec){return new Promise((res,rej)=>{const r=tx(STORE,"readwrite").put(rec);r.onsuccess=res;r.onerror=rej;});}
+function dbAll(){return new Promise((res,rej)=>{const r=tx(STORE,"readonly").getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=rej;});}
+function dbGet(id){return new Promise((res,rej)=>{const r=tx(STORE,"readonly").get(id);r.onsuccess=()=>res(r.result);r.onerror=rej;});}
+// 專案
+function pjPut(p){return new Promise((res,rej)=>{const r=tx(PROJ,"readwrite").put(p);r.onsuccess=res;r.onerror=rej;});}
+function pjAll(){return new Promise((res,rej)=>{const r=tx(PROJ,"readonly").getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=rej;});}
+function pjGet(id){return new Promise((res,rej)=>{const r=tx(PROJ,"readonly").get(id);r.onsuccess=()=>res(r.result);r.onerror=rej;});}
+function pjDel(id){return new Promise((res,rej)=>{const r=tx(PROJ,"readwrite").delete(id);r.onsuccess=res;r.onerror=rej;});}
+let PROJECTS=[];                                  // 記憶體快取
+async function loadProjects(){PROJECTS=(await pjAll()).sort((a,b)=>b.createdAt-a.createdAt);}
+const projName=id=>{const p=PROJECTS.find(x=>x.id===id);return p?p.name:"";};
+
+/* ===================================================================
+   工具函式
+   =================================================================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function fmtTime(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+function toast(msg,type="",ms=2600){
+  const t=$("#toast");const icons={ok:'<path d="M5 13l4 4L19 7"/>',warn:'<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',err:'<path d="M18 6 6 18M6 6l12 12"/>'};
+  t.className="toast show "+type;
+  t.innerHTML=(icons[type]?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${icons[type]}</svg>`:"")+`<span>${msg}</span>`;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),ms);
+}
+
+/* 照片壓縮：縮圖 + 轉 JPEG base64，省流量、加快上傳 */
+function compressImage(file){
+  return new Promise(res=>{
+    const img=new Image();const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let{width:w,height:h}=img;const m=CONFIG.IMG_MAX_EDGE;
+      if(Math.max(w,h)>m){const r=m/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r);}
+      const c=document.createElement("canvas");c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg",CONFIG.IMG_QUALITY));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);res(null);};
+    img.src=url;
+  });
+}
+function fileToDataURL(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(file);});}
+
+/* ===================================================================
+   狀態
+   =================================================================== */
+let SETTINGS=JSON.parse(localStorage.getItem("inspectSettings")||"{}");
+let draft={cats:[],media:[],lat:null,lng:null,acc:null};
+
+/* ===================================================================
+   初始化畫面
+   =================================================================== */
+function initForm(){
+  // 行政區
+  const sel=$("#i-area");
+  CONFIG.AREAS.forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;sel.appendChild(o);});
+  // 類別 chips
+  const wrap=$("#catChips");
+  CONFIG.CATEGORIES.forEach(c=>{
+    const el=document.createElement("div");el.className="chip";el.dataset.cat=c;
+    el.innerHTML=`<span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span><span>${c}</span>`;
+    el.onclick=()=>{
+      el.classList.toggle("on");
+      draft.cats=$$("#catChips .chip.on").map(x=>x.dataset.cat);
+      $("#f-cat").classList.remove("err");
+    };
+    wrap.appendChild(el);
+  });
+}
+
+/* GPS 定位 */
+function getGPS(){
+  const btn=$("#gpsBtn"),box=$("#coord");
+  if(!navigator.geolocation){box.className="coord show fail";box.textContent="此裝置不支援定位，請於地標欄位手動描述";return;}
+  btn.classList.add("busy");box.className="coord show";box.textContent="定位中…";
+  navigator.geolocation.getCurrentPosition(p=>{
+    btn.classList.remove("busy");
+    draft.lat=+p.coords.latitude.toFixed(6);draft.lng=+p.coords.longitude.toFixed(6);draft.acc=Math.round(p.coords.accuracy);
+    box.className="coord show";
+    box.innerHTML=`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>${draft.lat}, ${draft.lng}（精度 ±${draft.acc}m）`;
+    $("#f-loc").classList.remove("err");
+  },err=>{
+    btn.classList.remove("busy");
+    draft.lat=draft.lng=null;
+    box.className="coord show fail";
+    const m={1:"定位權限被拒，請於瀏覽器允許定位，或手動填寫地標",2:"無法取得位置，請確認 GPS 已開啟",3:"定位逾時，請重試"};
+    box.textContent="⚠ "+(m[err.code]||"定位失敗");
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+/* 加入照片/影片 */
+async function addMedia(files){
+  const hint=$("#mediaHint");
+  for(const f of files){
+    const isVideo=f.type.startsWith("video");
+    if(isVideo){
+      const mb=f.size/1048576;
+      if(mb>CONFIG.VIDEO_MAX_MB){
+        toast(`影片約 ${mb.toFixed(0)}MB，超過 ${CONFIG.VIDEO_MAX_MB}MB 上限`,"warn",3200);
+        continue;
+      }
+      const data=await fileToDataURL(f);
+      if(data)draft.media.push({type:"video",data,name:f.name,size:f.size});
+    }else if(f.type.startsWith("image")){
+      const data=await compressImage(f);
+      if(data)draft.media.push({type:"image",data,name:f.name});
+    }
+  }
+  renderThumbs();
+  $("#f-cat").parentElement; // noop
+  const totalMB=draft.media.reduce((s,m)=>s+(m.size||(m.data.length*0.75)),0)/1048576;
+  hint.style.display=draft.media.length?"block":"none";
+  hint.textContent=`已加入 ${draft.media.length} 個檔案，約 ${totalMB.toFixed(1)}MB`;
+}
+function renderThumbs(){
+  const wrap=$("#thumbs");wrap.innerHTML="";
+  draft.media.forEach((m,i)=>{
+    const t=document.createElement("div");t.className="thumb";
+    t.innerHTML=(m.type==="video"
+        ?`<video src="${m.data}" muted playsinline></video><span class="vtag">影片</span>`
+        :`<img src="${m.data}">`)
+      +`<button class="del" data-i="${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;
+    wrap.appendChild(t);
+  });
+  $$("#thumbs .del").forEach(b=>b.onclick=()=>{draft.media.splice(+b.dataset.i,1);renderThumbs();});
+}
+
+/* 驗證 + 儲存 */
+async function saveInspection(){
+  let ok=true;
+  const area=$("#i-area").value, cond=$("#i-cond").value.trim();
+  const setErr=(id,bad)=>{$(id).classList.toggle("err",bad);if(bad)ok=false;};
+  setErr("#f-area",!area);
+  setErr("#f-loc",draft.lat===null && !$("#i-landmark").value.trim());
+  setErr("#f-cat",draft.cats.length===0);
+  $("#i-cond").parentElement.classList.toggle("err",!cond);if(!cond)ok=false;
+  $("#thumbs").parentElement.classList.toggle("err",draft.media.length===0);if(draft.media.length===0)ok=false;
+  if(!ok){toast("請完成必填欄位（紅框處）","warn");document.querySelector(".field.err")?.scrollIntoView({behavior:"smooth",block:"center"});return;}
+  if(!SETTINGS.name){toast("請先到「設定」填寫巡檢人員姓名","warn",3200);return;}
+
+  const now=Date.now();
+  const rec={
+    localId:uid(),
+    seq:null,                          // 項次（上傳後由試算表回填）
+    projectId:$("#i-project").value||"",
+    area, landmark:$("#i-landmark").value.trim(),
+    lat:draft.lat, lng:draft.lng, acc:draft.acc,
+    categories:draft.cats.slice(),
+    condition:cond, note:$("#i-note").value.trim(),
+    media:draft.media.slice(),
+    inspector:SETTINGS.name,
+    createdAt:now, status:"待改善",
+    improvements:[], synced:0,
+  };
+  const btn=$("#newSave");btn.disabled=true;
+  try{
+    await dbPut(rec);
+    resetForm();
+    toast("已儲存到本機","ok");
+    await refreshAll();
+    trySync();                          // 有網路就立即上傳
+    go("list");
+  }catch(e){toast("儲存失敗："+e.message,"err");}
+  btn.disabled=false;
+}
+function resetForm(){
+  $("#i-area").value="";$("#i-landmark").value="";$("#i-cond").value="";$("#i-note").value="";
+  draft={cats:[],media:[],lat:null,lng:null,acc:null};
+  $$("#catChips .chip").forEach(c=>c.classList.remove("on"));
+  $("#coord").className="coord";renderThumbs();$("#mediaHint").style.display="none";
+  $$(".field.err").forEach(f=>f.classList.remove("err"));
+}
+
+/* ===================================================================
+   清單 + 詳情
+   =================================================================== */
+let curFilter="all", curProj="all";
+async function renderList(){
+  fillProjectDropdowns();
+  const all=(await dbAll()).sort((a,b)=>b.createdAt-a.createdAt);
+  const data=all.filter(r=>{
+    const st = curFilter==="all"?true : curFilter==="unsync"?!r.synced : r.status===curFilter;
+    const pj = curProj==="all"?true : curProj==="none"?!r.projectId : r.projectId===curProj;
+    return st&&pj;
+  });
+  const wrap=$("#recList");
+  $("#listCount").textContent=`共 ${all.length} 筆`;
+  if(!data.length){
+    wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><b>目前沒有紀錄</b>點下方「新增」開始巡檢建檔</div>`;
+    return;
+  }
+  wrap.innerHTML="";
+  data.forEach(r=>{
+    const cover=r.media.find(m=>m.type==="image");
+    const stCls={"待改善":"wait","改善中":"prog","已改善":"done"}[r.status];
+    const pn=projName(r.projectId);
+    const el=document.createElement("div");el.className="rec";
+    el.innerHTML=`
+      <div class="ph ${cover?"":"none"}">${cover?`<img src="${cover.data}">`:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="9" cy="8" r="2"/></svg>'}</div>
+      <div class="body">
+        <div class="row1">
+          <span class="no">${r.seq?("#"+String(r.seq).padStart(3,"0")):"未編號"}</span>
+          <span class="cat">${r.categories[0]||"—"}${r.categories.length>1?` +${r.categories.length-1}`:""}</span>
+        </div>
+        ${pn?`<div class="meta" style="color:var(--amber);font-weight:650"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>${pn}</div>`:""}
+        <div class="meta">${r.area}・${r.landmark||(r.lat?r.lat+","+r.lng:"無位置")}</div>
+        <div class="meta">${fmtTime(r.createdAt)}・${r.inspector}</div>
+        <div class="tags">
+          <span class="tag ${stCls}">${r.status}</span>
+          <span class="tag ${r.synced?"sync":"unsync"}">${r.synced?"已上傳":"待上傳"}</span>
+        </div>
+      </div>`;
+    el.onclick=()=>openDetail(r.localId);
+    wrap.appendChild(el);
+  });
+}
+
+async function openDetail(id){
+  const r=await dbGet(id);if(!r)return;
+  const cover=r.media[0];
+  const stCls={"待改善":"wait","改善中":"prog","已改善":"done"}[r.status];
+  const gallery=r.media.map(m=>`<div class="g">${m.type==="video"?`<video src="${m.data}" muted playsinline></video>`:`<img src="${m.data}">`}</div>`).join("");
+  const imps=r.improvements.map((im,i)=>`
+    <div class="kv"><span class="k">改善 ${i+1}</span><span class="v"><b>${im.unit}</b><br>工法：${im.method}<br><span style="color:var(--muted)">${fmtTime(im.date)}</span>
+    ${im.media&&im.media.length?`<div class="gallery">${im.media.map(m=>`<div class="g"><img src="${m.data}"></div>`).join("")}</div>`:""}</span></div>`).join("")
+    ||`<div class="kv"><span class="k">改善紀錄</span><span class="v" style="color:var(--muted)">尚無改善紀錄</span></div>`;
+
+  $("#view-detail").innerHTML=`
+    <button class="btn btn-ghost" id="backBtn" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>返回清單</button>
+    <div class="detail-cover">${cover?(cover.type==="video"?`<video src="${cover.data}" controls playsinline></video>`:`<img src="${cover.data}">`):""}</div>
+    <div class="card"><div class="card-b">
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <span class="tag ${stCls}">${r.status}</span>
+        <span class="tag ${r.synced?"sync":"unsync"}">${r.synced?"已上傳":"待上傳"}</span>
+      </div>
+      <div class="kv"><span class="k">項次</span><span class="v">${r.seq?"#"+String(r.seq).padStart(3,"0"):"上傳後編號"}</span></div>
+      <div class="kv"><span class="k">所屬專案</span><span class="v">${projName(r.projectId)||'<span style="color:var(--muted)">未分類</span>'}</span></div>
+      <div class="kv"><span class="k">行政區</span><span class="v">${r.area}</span></div>
+      <div class="kv"><span class="k">位置</span><span class="v">${r.landmark||"—"}${r.lat?`<br><span style="color:var(--muted)">${r.lat}, ${r.lng}（±${r.acc||"?"}m）</span>`:""}</span></div>
+      <div class="kv"><span class="k">破損類別</span><span class="v">${r.categories.join("、")}</span></div>
+      <div class="kv"><span class="k">破損狀況</span><span class="v">${r.condition}</span></div>
+      ${r.note?`<div class="kv"><span class="k">其他描述</span><span class="v">${r.note}</span></div>`:""}
+      <div class="kv"><span class="k">建立時間</span><span class="v">${fmtTime(r.createdAt)}</span></div>
+      <div class="kv"><span class="k">巡檢人員</span><span class="v">${r.inspector}</span></div>
+      ${r.media.length>1?`<div class="kv"><span class="k">所有媒體</span><span class="v"><div class="gallery">${gallery}</div></span></div>`:""}
+    </div></div>
+    <div class="card"><div class="card-h">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span>
+      <h2>改善追蹤<span>IMPROVEMENT TRACKING</span></h2></div>
+      <div class="card-b">${imps}
+        <button class="btn btn-amber" id="addImp" style="margin-top:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增改善紀錄</button>
+      </div>
+    </div><div style="height:14px"></div>`;
+  $("#backBtn").onclick=()=>go("list");
+  $("#addImp").onclick=()=>openImpForm(r.localId);
+  go("detail",true);
+}
+
+/* 改善表單 */
+let impDraft={media:[]};
+function openImpForm(id){
+  impDraft={media:[]};
+  $("#view-detail").innerHTML=`
+    <button class="btn btn-ghost" id="impBack" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>取消</button>
+    <div class="card"><div class="card-h">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span>
+      <h2>新增改善紀錄<span>IMPROVEMENT</span></h2></div>
+      <div class="card-b">
+        <div class="field"><label class="lbl">改善單位 <span class="req">*</span></label>
+          <input type="text" id="im-unit" placeholder="例：養護工程處 / 第三河川局"><div class="errmsg">請填寫改善單位</div></div>
+        <div class="field"><label class="lbl">改善工法 <span class="req">*</span></label>
+          <textarea id="im-method" placeholder="例：路面刨除重鋪 AC、灌漿補強、拋石護岸…"></textarea><div class="errmsg">請填寫改善工法</div></div>
+        <div class="field"><label class="lbl">改善後狀態 <span class="req">*</span></label>
+          <select id="im-status"><option value="改善中">改善中</option><option value="已改善">已改善（完工）</option></select></div>
+        <div class="field"><label class="lbl">改善照片 <span class="opt">建議上傳</span></label>
+          <button type="button" class="media-add" id="imMediaBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg>拍攝改善照片</button>
+          <input type="file" id="imMediaInput" accept="image/*" capture="environment" multiple hidden>
+          <div class="thumbs" id="imThumbs"></div>
+        </div>
+        <button class="btn btn-amber" id="imSave" style="margin-top:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>儲存改善紀錄</button>
+      </div></div><div style="height:14px"></div>`;
+  $("#impBack").onclick=()=>openDetail(id);
+  $("#imMediaBtn").onclick=()=>$("#imMediaInput").click();
+  $("#imMediaInput").onchange=async e=>{
+    for(const f of e.target.files){if(f.type.startsWith("image")){const d=await compressImage(f);if(d)impDraft.media.push({type:"image",data:d});}}
+    const w=$("#imThumbs");w.innerHTML="";
+    impDraft.media.forEach((m,i)=>{const t=document.createElement("div");t.className="thumb";
+      t.innerHTML=`<img src="${m.data}"><button class="del" data-i="${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;w.appendChild(t);});
+    $$("#imThumbs .del").forEach(b=>b.onclick=()=>{impDraft.media.splice(+b.dataset.i,1);$("#imMediaInput").onchange({target:{files:[]}});});
+    e.target.value="";
+  };
+  $("#imSave").onclick=async()=>{
+    const unit=$("#im-unit").value.trim(),method=$("#im-method").value.trim();
+    $("#im-unit").parentElement.classList.toggle("err",!unit);
+    $("#im-method").parentElement.classList.toggle("err",!method);
+    if(!unit||!method){toast("請完成必填欄位","warn");return;}
+    const r=await dbGet(id);
+    r.improvements.push({unit,method,status:$("#im-status").value,date:Date.now(),media:impDraft.media.slice()});
+    r.status=$("#im-status").value;
+    r.synced=0;                        // 有更新 → 需重新上傳
+    await dbPut(r);
+    toast("改善紀錄已儲存","ok");
+    await refreshAll();trySync();openDetail(id);
+  };
+  go("detail",true);
+}
+
+/* ===================================================================
+   專案管理
+   =================================================================== */
+function fillProjectDropdowns(){
+  const opts='<option value="">未分類</option>'+PROJECTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+  const sel=$("#i-project");if(sel){const v=sel.value;sel.innerHTML=opts;sel.value=v;}
+  const fil=$("#projFilter");if(fil){const v=fil.value;
+    fil.innerHTML='<option value="all">所有專案</option><option value="none">未分類</option>'+PROJECTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    fil.value=v||"all";}
+}
+function fmtDate(s){return s?s.replace(/-/g,"/"):"";}
+async function renderProjects(){
+  await loadProjects();fillProjectDropdowns();
+  const all=await dbAll();
+  $("#projCount").textContent=`共 ${PROJECTS.length} 個`;
+  const wrap=$("#projList");
+  if(!PROJECTS.length){
+    wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><b>尚未建立專案</b>建立專案後，新增巡檢時即可歸類</div>`;return;
+  }
+  wrap.innerHTML="";
+  PROJECTS.forEach(p=>{
+    const n=all.filter(r=>r.projectId===p.id).length;
+    const period=(p.startDate||p.endDate)?`${fmtDate(p.startDate)||"—"} ～ ${fmtDate(p.endDate)||"—"}`:"未設定期間";
+    const el=document.createElement("div");el.className="rec";el.style.alignItems="center";
+    el.innerHTML=`
+      <div class="ph none" style="background:var(--amber-bg);color:var(--amber)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      </div>
+      <div class="body">
+        <div class="cat" style="margin-bottom:3px">${p.name}</div>
+        <div class="meta"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${period}</div>
+        <div class="meta">${n} 筆巡檢紀錄</div>
+      </div>
+      <button class="del" data-edit="${p.id}" style="position:static;width:40px;height:40px;background:var(--surface-2);color:var(--navy-2);border:1px solid var(--line);border-radius:10px;flex:none">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+      </button>`;
+    el.querySelector("[data-edit]").onclick=e=>{e.stopPropagation();openProjForm(p.id);};
+    wrap.appendChild(el);
+  });
+}
+
+function openProjForm(id){
+  const p=id?PROJECTS.find(x=>x.id===id):null;
+  $("#view-projform").innerHTML=`
+    <button class="btn btn-ghost" id="pjBack" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>返回</button>
+    <div class="card"><div class="card-h">
+      <span class="ic" style="background:var(--amber-bg);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
+      <h2>${p?"編輯專案":"建立新專案"}<span>PROJECT</span></h2></div>
+      <div class="card-b">
+        <div class="field"><label class="lbl">專案名稱 <span class="req">*</span></label>
+          <input type="text" id="pj-name" placeholder="例：0823 豪雨災後巡查" value="${p?p.name.replace(/"/g,'&quot;'):""}">
+          <div class="errmsg">請填寫專案名稱</div></div>
+        <div class="field"><label class="lbl">事件期間 <span class="opt">選填，可選日曆</span></label>
+          <div style="display:flex;gap:9px;align-items:center">
+            <input type="date" id="pj-start" value="${p?p.startDate||"":""}" style="flex:1">
+            <span style="color:var(--muted);font-weight:700">～</span>
+            <input type="date" id="pj-end" value="${p?p.endDate||"":""}" style="flex:1">
+          </div>
+          <div class="errmsg" id="pj-dateerr">結束日期不可早於開始日期</div>
+          <div class="hint">點欄位即可叫出日曆選擇起訖日。</div></div>
+        <div class="field"><label class="lbl">備註 <span class="opt">選填</span></label>
+          <textarea id="pj-note" placeholder="事件說明、災害類型、權責範圍…">${p?(p.note||""):""}</textarea></div>
+        <div class="btn-row">
+          ${p?`<button class="btn btn-ghost" id="pjDel" style="flex:0 0 38%;color:var(--red)">刪除</button>`:""}
+          <button class="btn btn-amber" id="pjSave">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>儲存專案</button>
+        </div>
+      </div></div><div style="height:14px"></div>`;
+  $("#pjBack").onclick=()=>go("proj");
+  $("#pjSave").onclick=async()=>{
+    const name=$("#pj-name").value.trim(),s=$("#pj-start").value,e=$("#pj-end").value;
+    $("#pj-name").parentElement.classList.toggle("err",!name);
+    if(!name){toast("請填寫專案名稱","warn");return;}
+    const dateBad=s&&e&&e<s;
+    $("#pj-start").parentElement.classList.toggle("err",dateBad);
+    if(dateBad){toast("結束日期不可早於開始日期","warn");return;}
+    const proj=p?{...p}:{id:uid(),createdAt:Date.now()};
+    proj.name=name;proj.startDate=s;proj.endDate=e;proj.note=$("#pj-note").value.trim();
+    await pjPut(proj);await loadProjects();fillProjectDropdowns();
+    toast(p?"專案已更新":"專案已建立","ok");go("proj");
+  };
+  if(p)$("#pjDel").onclick=async()=>{
+    if(!confirm(`確定刪除專案「${p.name}」？\n該專案下的巡檢紀錄會改為「未分類」，紀錄本身不會被刪除。`))return;
+    const all=await dbAll();
+    for(const r of all){if(r.projectId===p.id){r.projectId="";await dbPut(r);}}
+    await pjDel(p.id);await loadProjects();fillProjectDropdowns();
+    toast("專案已刪除","ok");go("proj");
+  };
+  go("projform",true);
+}
+
+
+let syncing=false;
+async function trySync(manual=false){
+  if(syncing)return;
+  if(!SETTINGS.url){if(manual)toast("尚未設定 Apps Script 網址","warn",3200);return;}
+  if(!navigator.onLine){if(manual)toast("目前離線，恢復網路後將自動上傳","warn",3200);return;}
+  const all=await dbAll();const pending=all.filter(r=>!r.synced);
+  if(!pending.length){if(manual)toast("沒有待上傳的紀錄","ok");return;}
+  syncing=true;updateSyncBar(pending.length,true);
+  let done=0,fail=0;
+  for(const r of pending){
+    try{
+      const resp=await fetch(SETTINGS.url,{
+        method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({type:"record",record:{...r,projectName:projName(r.projectId)}}),
+      });
+      const out=await resp.json();
+      if(out&&out.ok){
+        const fresh=await dbGet(r.localId);
+        fresh.synced=1; if(out.seq)fresh.seq=out.seq;
+        await dbPut(fresh);done++;
+      }else throw new Error(out&&out.error||"伺服器回應錯誤");
+    }catch(e){fail++;}
+  }
+  syncing=false;
+  await refreshAll();
+  if(done)toast(`已上傳 ${done} 筆${fail?`，${fail} 筆失敗`:""}`,fail?"warn":"ok");
+  else if(fail&&manual)toast(`上傳失敗，請檢查網址或網路（${fail} 筆）`,"err",3500);
+}
+async function updateSyncBar(n,spinning){
+  if(n===undefined){const all=await dbAll();n=all.filter(r=>!r.synced).length;}
+  const bar=$("#syncbar");
+  bar.classList.toggle("show",n>0);
+  $("#syncTxt").textContent=`有 ${n} 筆待上傳`+(SETTINGS.url?"":"（尚未設定上傳網址）");
+  bar.querySelector("svg").classList.toggle("spin",!!spinning);
+}
+
+/* ===================================================================
+   導覽 / 連線狀態
+   =================================================================== */
+function go(v,keepNav){
+  $$(".view").forEach(s=>s.classList.remove("active"));
+  $("#view-"+v).classList.add("active");
+  if(!keepNav){
+    $$(".nav button").forEach(b=>b.classList.remove("on"));
+    const map={list:"#nav-list",proj:"#nav-proj",new:"#nav-new",set:"#nav-set"};
+    if(map[v])$(map[v]).classList.add("on");
+  }
+  if(v==="list")renderList();
+  if(v==="proj")renderProjects();
+  if(v==="set")fillSettings();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+function updateNet(){
+  const on=navigator.onLine,el=$("#net");
+  el.classList.toggle("off",!on);
+  $("#netTxt").textContent=on?"已連線":"離線中";
+  if(on)trySync();
+}
+async function refreshAll(){await updateSyncBar();await renderList();const all=await dbAll();$("#localCount").textContent=all.length;}
+
+/* 設定 */
+function fillSettings(){$("#s-name").value=SETTINGS.name||"";$("#s-url").value=SETTINGS.url||"";
+  $("#urlOk").style.display=SETTINGS.url?"inline-flex":"none";}
+function saveSettings(){
+  const name=$("#s-name").value.trim(),url=$("#s-url").value.trim();
+  if(!name){toast("請填寫巡檢人員姓名","warn");return;}
+  if(url&&!/^https:\/\/script\.google\.com\/macros\//.test(url)){toast("網址格式不正確，應以 script.google.com/macros/ 開頭","warn",3500);return;}
+  SETTINGS={name,url};localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));
+  fillSettings();toast("設定已儲存","ok");updateSyncBar();if(url)trySync();
+}
+async function testConn(){
+  if(!SETTINGS.url){toast("請先儲存 Apps Script 網址","warn");return;}
+  if(!navigator.onLine){toast("目前離線，無法測試","warn");return;}
+  toast("測試連線中…");
+  try{
+    const r=await fetch(SETTINGS.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"ping"})});
+    const o=await r.json();
+    if(o&&o.ok)toast("連線成功 ✓","ok");else throw new Error(o.error||"未知");
+  }catch(e){toast("連線失敗，請確認已『部署為網頁應用程式』且權限為任何人","err",4000);}
+}
+
+/* ===================================================================
+   綁定 + 啟動
+   =================================================================== */
+function bind(){
+  $$(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $("#gpsBtn").onclick=getGPS;
+  $("#mediaBtn").onclick=()=>$("#mediaInput").click();
+  $("#mediaInput").onchange=e=>{addMedia([...e.target.files]);e.target.value="";};
+  $("#newSave").onclick=saveInspection;
+  $("#newReset").onclick=()=>{resetForm();toast("已清除");};
+  $("#setSave").onclick=saveSettings;
+  $("#testConn").onclick=testConn;
+  $("#syncNow").onclick=()=>trySync(true);
+  $("#newProjBtn").onclick=()=>openProjForm();
+  $("#quickProj").onclick=()=>openProjForm();
+  $("#projFilter").onchange=e=>{curProj=e.target.value;renderList();};
+  $$("#filters .fbtn").forEach(b=>b.onclick=()=>{$$("#filters .fbtn").forEach(x=>x.classList.remove("on"));b.classList.add("on");curFilter=b.dataset.f;renderList();});
+  window.addEventListener("online",updateNet);
+  window.addEventListener("offline",updateNet);
+}
+(async function start(){
+  try{await openDB();}catch(e){alert("無法開啟本機資料庫，請改用 Chrome/Safari 並關閉無痕模式");return;}
+  await loadProjects();
+  initForm();fillProjectDropdowns();bind();updateNet();await refreshAll();
+  if(!SETTINGS.name){go("set");toast("第一次使用，請先填寫姓名","",3200);}
+  if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+})();
+</script>
+</body>
+</html>
