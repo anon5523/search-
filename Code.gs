@@ -18,6 +18,14 @@ var SHEET_ID = '1-7-VSmePtpsExX9l8LQVrK2cCjDuq5GKxrRI6CNLjbw';
 
 var MEDIA_FOLDER_NAME = '巡檢照片';
 var DEFAULT_TAB = '未分類';
+var SHEET_PUMP = '抽水機台帳';
+var SHEET_PCHK = '抽水機點檢';
+
+var HEADERS_PUMP = ['設備編號','id','名稱','型式','驅動方式','口徑(吋)','抽水量(cms)','保管單位','維護廠商',
+                    '站房/預佈位置','保養週期(天)','最後點檢','最後結果','下次保養到期','最後更新'];
+var HEADERS_PCHK = ['項次','localId','設備編號','抽水機名稱','型式','驅動方式','綜合判定',
+                    '異常項目','試車啟動','出水情形','運轉(分)','試車備註','點檢人員','填報單位',
+                    '點檢時間','照片連結','最後更新'];
 
 var HEADERS = ['項次','localId','所屬專案','行政區','地標/位置','緯度','經度','GPS精度(m)',
                '破損類別','破損狀況','其他描述','巡檢人員','填報單位','建立時間','狀態',
@@ -33,6 +41,8 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     if (body.type === 'ping')   return json_({ ok: true, msg: 'pong' });
     if (body.type === 'record') return json_({ ok: true, seq: saveRecord_(body.record) });
+    if (body.type === 'pump')   { savePump_(body.pump); return json_({ ok: true }); }
+    if (body.type === 'pcheck') return json_({ ok: true, seq: savePcheck_(body.check) });
     return json_({ ok: false, error: '未知的請求類型' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -102,6 +112,60 @@ function saveMediaList_(folder, list, baseName, tag) {
     } catch (e) {}
   }
   return links.join('\n');
+}
+
+/* ---------- 抽水機台帳 ---------- */
+function savePump_(p) {
+  var ss = getSS_();
+  var sh = getOrCreateSheet_(ss, SHEET_PUMP, HEADERS_PUMP);
+  var row = [
+    p.code || '', p.id, p.name || '', p.type || '', p.driver || '',
+    p.sizeInch || '', p.capacityCms || '', p.unit || '', p.vendor || '', p.location || '',
+    p.intervalDays || '', p.lastCheckAt ? new Date(p.lastCheckAt) : '', p.lastResult || '',
+    p.nextDueAt ? new Date(p.nextDueAt) : '', new Date()
+  ];
+  var idx = findRowByCol_(sh, 2, p.id);   // 第2欄=id
+  if (idx === -1) sh.appendRow(row);
+  else sh.getRange(idx, 1, 1, HEADERS_PUMP.length).setValues([row]);
+}
+
+/* ---------- 抽水機點檢 ---------- */
+function savePcheck_(c) {
+  var ss = getSS_();
+  var sh = getOrCreateSheet_(ss, SHEET_PCHK, HEADERS_PCHK);
+  var folder = getMediaFolder_();
+
+  // 異常項目彙整 + 收集異常照片
+  var abnormal = [], media = [];
+  (c.items || []).forEach(function (it) {
+    if (it.val === '異常') {
+      abnormal.push('• ' + it.name + (it.note ? '：' + it.note : ''));
+      if (it.photo) media.push({ data: it.photo });
+    }
+  });
+  (c.media || []).forEach(function (m) { media.push(m); });
+  var links = saveMediaList_(folder, media, c.localId, '點檢');
+
+  var idx = findRowByCol_(sh, 2, c.localId);
+  var seq = (idx === -1) ? nextSeq_(sh) : (sh.getRange(idx, 1).getValue() || nextSeq_(sh));
+  var row = [
+    seq, c.localId, c.pumpCode || '', c.pumpName || '', c.pumpType || '', c.driver || '',
+    c.result || '', abnormal.join('\n') || '（全部正常）',
+    c.trialStart || '', c.trialOutflow || '', c.trialMinutes || '', c.trialNote || '',
+    c.inspector || '', c.inspectorUnit || '', c.createdAt ? new Date(c.createdAt) : '',
+    links, new Date()
+  ];
+  if (idx === -1) sh.appendRow(row);
+  else sh.getRange(idx, 1, 1, HEADERS_PCHK.length).setValues([row]);
+  return seq;
+}
+
+function findRowByCol_(sh, col, val) {
+  var last = sh.getLastRow();
+  if (last < 2) return -1;
+  var v = sh.getRange(2, col, last - 1, 1).getValues();
+  for (var i = 0; i < v.length; i++) if (String(v[i][0]) === String(val)) return i + 2;
+  return -1;
 }
 
 /* ---------- 工具 ---------- */

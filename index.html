@@ -106,6 +106,26 @@
   .filters{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
   .fbtn{flex:none;padding:8px 14px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;font-size:13px;font-weight:650;color:var(--ink-2);white-space:nowrap}
   .fbtn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .seg{display:flex;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
+  .seg button{flex:1;border:none;background:none;padding:11px 8px;border-radius:9px;font-size:14.5px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:7px}
+  .seg button svg{width:17px;height:17px}
+  .seg button.on{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(19,38,63,.22)}
+  .pump-state{display:flex;gap:6px}
+  .pump-state .st{flex:1;border:1.5px solid var(--line);background:var(--surface-2);border-radius:9px;padding:9px 4px;font-size:13px;font-weight:700;color:var(--ink-2);text-align:center}
+  .pump-state .st.ok{}
+  .pump-state .st.ng.on{background:var(--red);border-color:var(--red);color:#fff}
+  .pump-state .st.good.on{background:var(--green);border-color:var(--green);color:#fff}
+  .pump-state .st.na.on{background:var(--muted);border-color:var(--muted);color:#fff}
+  .chk-item{border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;margin-bottom:9px;background:var(--surface)}
+  .chk-item .nm{font-size:14px;font-weight:650;color:var(--ink);margin-bottom:8px}
+  .chk-extra{margin-top:9px;display:none}.chk-extra.show{display:block}
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .dash-cell{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center;box-shadow:var(--shadow)}
+  .dash-cell .n{font-size:26px;font-weight:800;line-height:1}
+  .dash-cell .l{font-size:12px;color:var(--muted);font-weight:600;margin-top:5px}
+  .gauge{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;text-align:center}
+  .gauge .big{font-size:40px;font-weight:850;color:var(--green)}
+  .gauge .cap{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px}
   .rec{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 15px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start}
   .rec .ph{width:58px;height:58px;border-radius:10px;flex:none;background:#0b1119;overflow:hidden;position:relative}
   .rec .ph img{width:100%;height:100%;object-fit:cover}
@@ -188,6 +208,10 @@
 
   <!-- ===== 巡檢填報 ===== -->
   <section class="view active" id="view-new">
+    <div class="seg" id="newSeg">
+      <button class="on" data-go="new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>設施巡查</button>
+      <button data-go="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>抽水機點檢</button>
+    </div>
     <div class="syncbar" id="syncbar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
       <span id="syncTxt">有 0 筆待上傳</span><button class="sb-btn" id="syncNow">立即上傳</button>
@@ -321,10 +345,77 @@
         <button class="btn btn-ghost" id="goProj">開啟專案管理頁</button>
       </div>
     </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><h2>抽水機<span>PUMPS</span></h2></div>
+      <div class="card-b">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">維護抽水機設備台帳，並查看妥善率與保養到期。</div>
+        <button class="btn btn-ghost" id="goPumps" style="margin-bottom:10px">抽水機台帳</button>
+        <button class="btn btn-ghost" id="goDash">妥善率／保養到期儀表板</button>
+      </div>
+    </div>
     <div class="card"><div class="card-b" style="font-size:13px;color:var(--muted);line-height:1.6">
       後端連線：<span class="ok-pill" id="connPill">檢查中…</span><br>
       本機暫存 <b id="localCount" style="color:var(--ink-2)">0</b> 筆紀錄。清除瀏覽器資料前，請先確認皆已上傳。
     </div></div>
+  </section>
+
+  <!-- ===== 抽水機點檢 ===== -->
+  <section class="view" id="view-pcheck">
+    <div class="seg" id="pcheckSeg">
+      <button data-go="new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>設施巡查</button>
+      <button class="on" data-go="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>抽水機點檢</button>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><h2>抽水機點檢<span>PUMP CHECK</span></h2></div>
+      <div class="card-b">
+        <div class="field" id="pf-pump">
+          <label class="lbl">選擇抽水機 <span class="req">*</span></label>
+          <div style="display:flex;gap:9px">
+            <select id="pc-pump" style="flex:1"><option value="">請先選擇設備…</option></select>
+            <button type="button" class="gps" id="pcToPumps" title="台帳" style="width:50px;color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+          <div class="hint" id="pc-meta"></div>
+          <div class="errmsg">請選擇要點檢的抽水機</div>
+        </div>
+        <div id="pc-checks"></div>
+        <div class="card" style="box-shadow:none;border-color:var(--line-2);margin-top:6px"><div class="card-b">
+          <div class="field"><label class="lbl">試車啟動</label><select id="pc-start"><option value="正常">啟動正常</option><option value="異常">啟動異常</option><option value="未試車">未試車</option></select></div>
+          <div class="field"><label class="lbl">出水情形</label><select id="pc-outflow"><option value="正常">出水正常</option><option value="不足">出水不足</option><option value="無水">無出水</option><option value="未試車">未試車</option></select></div>
+          <div class="field"><label class="lbl">運轉時間（分鐘）</label><input type="text" id="pc-min" inputmode="numeric" placeholder="例：10"></div>
+          <div class="field" style="margin-bottom:0"><label class="lbl">試車備註 <span class="opt">選填</span></label><input type="text" id="pc-trialnote" placeholder="運轉聲音、振動、異常…"></div>
+        </div></div>
+        <div class="field" style="margin-top:14px"><label class="lbl">綜合判定 <span class="req">*</span></label>
+          <select id="pc-result"><option value="妥善">妥善（可用）</option><option value="待修">待修（有缺失）</option></select>
+          <div class="hint" id="pc-autohint"></div>
+        </div>
+        <div class="field"><label class="lbl">整體照片 <span class="opt">選填</span></label>
+          <button type="button" class="media-add" id="pcMediaBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg>拍攝點檢照片</button>
+          <input type="file" id="pcMediaInput" accept="image/*" capture="environment" multiple hidden><div class="thumbs" id="pcThumbs"></div></div>
+        <label class="lbl" style="align-items:flex-start;gap:9px;cursor:pointer;margin-bottom:16px"><input type="checkbox" id="pc-sign" style="width:20px;height:20px;margin-top:1px;flex:none">本人確認以上點檢項目均經實際檢查屬實</label>
+        <button class="btn btn-primary" id="pcSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>儲存點檢紀錄</button>
+      </div>
+    </div><div style="height:14px"></div>
+  </section>
+
+  <!-- ===== 抽水機台帳 ===== -->
+  <section class="view" id="view-pumps">
+    <div class="list-head"><h2>抽水機台帳</h2><span id="pumpCount" style="font-size:13px;color:var(--muted);font-weight:600"></span></div>
+    <button class="btn btn-primary" id="newPumpBtn" style="margin-bottom:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增抽水機</button>
+    <div id="pumpList"></div>
+  </section>
+  <section class="view" id="view-pumpform"></section>
+
+  <!-- ===== 妥善率儀表板 ===== -->
+  <section class="view" id="view-dash">
+    <div class="list-head"><h2>抽水機儀表板</h2><span id="dashCount" style="font-size:13px;color:var(--muted);font-weight:600"></span></div>
+    <div class="gauge"><div class="big" id="dashRate">—</div><div class="cap">設備妥善率（妥善 ÷ 已點檢）</div></div>
+    <div class="dash-grid">
+      <div class="dash-cell"><div class="n" style="color:var(--green)" id="dashGood">0</div><div class="l">妥善</div></div>
+      <div class="dash-cell"><div class="n" style="color:var(--red)" id="dashBad">0</div><div class="l">待修</div></div>
+      <div class="dash-cell"><div class="n" style="color:var(--muted)" id="dashNone">0</div><div class="l">未點檢</div></div>
+    </div>
+    <div class="list-head" style="margin-top:6px"><h2 style="font-size:15px">保養到期</h2></div>
+    <div id="dueList"></div>
   </section>
 </main>
 
@@ -372,6 +463,18 @@ const CONFIG = {
 
   MAP_CENTER: [23.12, 120.28], MAP_ZOOM: 11,
   VIDEO_MAX_MB: 25, IMG_MAX_EDGE: 1600, IMG_QUALITY: 0.78,
+
+  // 抽水機點檢設定
+  PUMP: {
+    TYPES: ["移動式","固定站"],
+    DRIVERS: ["柴油引擎(豎軸式)","電動馬達(沉水式)"],
+    CHECKS: {
+      common: ["外觀與清潔","底座/固定螺栓","管路與快速接頭","漏油/漏水","吸水口濾網","儀表/警示燈","防護裝置"],
+      "柴油引擎(豎軸式)": ["引擎機油油位/油質","燃油存量","冷卻水/水箱","電瓶電壓","皮帶/聯軸器","真空泵浦真空度","排煙狀況","起動馬達"],
+      "電動馬達(沉水式)": ["電源/配電盤","絕緣/接地","馬達溫度","液位自動控制","電纜線狀況"]
+    },
+    MAINT_INTERVAL_DAYS: 30   // 預設保養週期（非汛期每月1次）
+  },
 };
 
 /* Leaflet 預設圖示改用本機圖檔（若地圖元件未載入，整段略過，不影響其他功能） */
@@ -390,13 +493,15 @@ const TILE_OPT={maxZoom:19,attribution:"© OpenStreetMap"};
 /* ===================================================================
    IndexedDB
    =================================================================== */
-const DB_NAME="inspectDB",STORE="records",PROJ="projects";
+const DB_NAME="inspectDB",STORE="records",PROJ="projects",PUMP="pumps",PCHK="pchecks";
 let db;
 function openDB(){return new Promise((res,rej)=>{
-  const r=indexedDB.open(DB_NAME,2);
+  const r=indexedDB.open(DB_NAME,3);
   r.onupgradeneeded=e=>{const d=e.target.result;
     if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:"localId"}).createIndex("synced","synced");
-    if(!d.objectStoreNames.contains(PROJ))d.createObjectStore(PROJ,{keyPath:"id"});};
+    if(!d.objectStoreNames.contains(PROJ))d.createObjectStore(PROJ,{keyPath:"id"});
+    if(!d.objectStoreNames.contains(PUMP))d.createObjectStore(PUMP,{keyPath:"id"});
+    if(!d.objectStoreNames.contains(PCHK))d.createObjectStore(PCHK,{keyPath:"localId"});};
   r.onsuccess=e=>{db=e.target.result;res()};r.onerror=e=>rej(e);});}
 function tx(s,m){return db.transaction(s,m).objectStore(s);}
 function dbPut(r){return new Promise((res,rej)=>{const q=tx(STORE,"readwrite").put(r);q.onsuccess=res;q.onerror=rej;});}
@@ -405,9 +510,16 @@ function dbGet(id){return new Promise((res,rej)=>{const q=tx(STORE,"readonly").g
 function pjPut(p){return new Promise((res,rej)=>{const q=tx(PROJ,"readwrite").put(p);q.onsuccess=res;q.onerror=rej;});}
 function pjAll(){return new Promise((res,rej)=>{const q=tx(PROJ,"readonly").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=rej;});}
 function pjDel(id){return new Promise((res,rej)=>{const q=tx(PROJ,"readwrite").delete(id);q.onsuccess=res;q.onerror=rej;});}
-let PROJECTS=[];
+function pmPut(p){return new Promise((res,rej)=>{const q=tx(PUMP,"readwrite").put(p);q.onsuccess=res;q.onerror=rej;});}
+function pmAll(){return new Promise((res,rej)=>{const q=tx(PUMP,"readonly").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=rej;});}
+function pmDel(id){return new Promise((res,rej)=>{const q=tx(PUMP,"readwrite").delete(id);q.onsuccess=res;q.onerror=rej;});}
+function pcPut(r){return new Promise((res,rej)=>{const q=tx(PCHK,"readwrite").put(r);q.onsuccess=res;q.onerror=rej;});}
+function pcAll(){return new Promise((res,rej)=>{const q=tx(PCHK,"readonly").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=rej;});}
+let PROJECTS=[],PUMPS=[];
 async function loadProjects(){PROJECTS=(await pjAll()).sort((a,b)=>b.createdAt-a.createdAt);}
+async function loadPumps(){PUMPS=(await pmAll()).sort((a,b)=>(a.code||"").localeCompare(b.code||""));}
 const projName=id=>{const p=PROJECTS.find(x=>x.id===id);return p?p.name:"";};
+const pumpById=id=>PUMPS.find(x=>x.id===id);
 
 /* ===================================================================
    工具
@@ -735,6 +847,190 @@ function openProjForm(id){
 }
 
 /* ===================================================================
+   抽水機：台帳
+   =================================================================== */
+function pumpLabel(p){return (p.code?p.code+" ":"")+(p.name||"未命名")+"（"+(p.type||"")+"）";}
+function fillPumpDropdown(){
+  const sel=$("#pc-pump");if(!sel)return;const v=sel.value;
+  sel.innerHTML='<option value="">請先選擇設備…</option>'+PUMPS.map(p=>`<option value="${p.id}">${esc(pumpLabel(p))}</option>`).join("");
+  sel.value=v;
+}
+async function renderPumps(){
+  await loadPumps();fillPumpDropdown();
+  const checks=await pcAll();
+  $("#pumpCount").textContent=`共 ${PUMPS.length} 台`;
+  const wrap=$("#pumpList");
+  if(!PUMPS.length){wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><b>尚未建立抽水機</b>先建立台帳，點檢時即可選取</div>`;return;}
+  wrap.innerHTML="";
+  PUMPS.forEach(p=>{
+    const n=checks.filter(c=>c.pumpId===p.id).length;
+    const due=p.nextDueAt?fmtDate(new Date(p.nextDueAt).toISOString().slice(0,10)):"—";
+    const overdue=p.nextDueAt&&p.nextDueAt<Date.now();
+    const rcls=p.lastResult==="待修"?"unsync":p.lastResult==="妥善"?"done":"sync";
+    const el=document.createElement("div");el.className="rec";el.style.alignItems="center";
+    el.innerHTML=`<div class="ph none" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div>
+      <div class="body"><div class="cat" style="margin-bottom:3px">${esc(p.name||"未命名")}</div>
+        <div class="meta">${esc(p.code||"無編號")}・${esc(p.type||"")}${p.driver?"・"+esc(p.driver):""}</div>
+        <div class="meta">保管：${esc(p.unit||"—")}・${n} 次點檢</div>
+        <div class="tags"><span class="tag ${rcls}">${p.lastResult||"未點檢"}</span><span class="tag ${overdue?"unsync":"sync"}">保養到期 ${due}</span></div>
+      </div>
+      <button class="del" data-edit="${p.id}" style="position:static;width:40px;height:40px;background:var(--surface-2);color:var(--navy-2);border:1px solid var(--line);border-radius:10px;flex:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>`;
+    el.querySelector("[data-edit]").onclick=e=>{e.stopPropagation();openPumpForm(p.id);};wrap.appendChild(el);
+  });
+}
+function openPumpForm(id){
+  const p=id?pumpById(id):null;
+  const opt=(arr,v)=>arr.map(x=>`<option value="${x}"${x===v?" selected":""}>${x}</option>`).join("");
+  $("#view-pumpform").innerHTML=`
+    <button class="btn btn-ghost" id="pmBack" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>返回</button>
+    <div class="card"><div class="card-h"><span class="ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><h2>${p?"編輯抽水機":"新增抽水機"}<span>PUMP ASSET</span></h2></div>
+      <div class="card-b">
+        <div class="field"><label class="lbl">設備編號 <span class="req">*</span></label><input type="text" id="pm-code" placeholder="例：TN-MP-031" value="${p?esc(p.code):""}"><div class="errmsg">請填寫設備編號</div></div>
+        <div class="field"><label class="lbl">名稱 <span class="req">*</span></label><input type="text" id="pm-name" placeholder="例：12吋移動式抽水機" value="${p?esc(p.name):""}"><div class="errmsg">請填寫名稱</div></div>
+        <div class="field"><label class="lbl">型式</label><select id="pm-type">${opt(CONFIG.PUMP.TYPES,p?p.type:"")}</select></div>
+        <div class="field"><label class="lbl">驅動方式</label><select id="pm-driver">${opt(CONFIG.PUMP.DRIVERS,p?p.driver:"")}</select></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label class="lbl">口徑（吋）</label><input type="text" id="pm-size" inputmode="numeric" placeholder="例：12" value="${p?esc(p.sizeInch||""):""}"></div>
+          <div class="field" style="flex:1"><label class="lbl">抽水量（cms）</label><input type="text" id="pm-cap" placeholder="例：0.3" value="${p?esc(p.capacityCms||""):""}"></div>
+        </div>
+        <div class="field"><label class="lbl">保管單位</label><input type="text" id="pm-unit" placeholder="例：第三河川分署 / 區公所" value="${p?esc(p.unit||""):""}"></div>
+        <div class="field"><label class="lbl">維護廠商</label><input type="text" id="pm-vendor" placeholder="開口契約廠商" value="${p?esc(p.vendor||""):""}"></div>
+        <div class="field"><label class="lbl">站房 / 預佈位置</label><input type="text" id="pm-loc" placeholder="例：鹽水區○○堤防預佈點" value="${p?esc(p.location||""):""}"></div>
+        <div class="field"><label class="lbl">保養週期（天）</label><input type="text" id="pm-interval" inputmode="numeric" placeholder="預設 ${CONFIG.PUMP.MAINT_INTERVAL_DAYS}" value="${p&&p.intervalDays?p.intervalDays:""}"><div class="hint">非汛期每月1次(30)、汛期每月2次(15)。</div></div>
+        <div class="btn-row">${p?`<button class="btn btn-ghost" id="pmDel" style="flex:0 0 38%;color:var(--red)">刪除</button>`:""}<button class="btn btn-primary" id="pmSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>儲存</button></div>
+      </div></div><div style="height:14px"></div>`;
+  $("#pmBack").onclick=()=>go("pumps");
+  $("#pmSave").onclick=async()=>{
+    const code=$("#pm-code").value.trim(),name=$("#pm-name").value.trim();
+    $("#pm-code").parentElement.classList.toggle("err",!code);$("#pm-name").parentElement.classList.toggle("err",!name);
+    if(!code||!name){toast("請完成必填欄位","warn");return;}
+    const pump=p?{...p}:{id:uid(),createdAt:Date.now()};
+    pump.code=code;pump.name=name;pump.type=$("#pm-type").value;pump.driver=$("#pm-driver").value;
+    pump.sizeInch=$("#pm-size").value.trim();pump.capacityCms=$("#pm-cap").value.trim();
+    pump.unit=$("#pm-unit").value.trim();pump.vendor=$("#pm-vendor").value.trim();pump.location=$("#pm-loc").value.trim();
+    pump.intervalDays=parseInt($("#pm-interval").value,10)||CONFIG.PUMP.MAINT_INTERVAL_DAYS;
+    pump.synced=0;await pmPut(pump);await loadPumps();fillPumpDropdown();toast(p?"已更新":"已建立","ok");trySync();go("pumps");};
+  if(p)$("#pmDel").onclick=async()=>{if(!confirm(`確定刪除「${p.name}」？此設備的點檢紀錄仍會保留。`))return;await pmDel(p.id);await loadPumps();fillPumpDropdown();toast("已刪除","ok");go("pumps");};
+  go("pumpform",true);
+}
+
+/* ===================================================================
+   抽水機：點檢
+   =================================================================== */
+let pcDraft={items:{},media:[]};
+function renderChecklist(driver){
+  const wrap=$("#pc-checks");
+  const list=[...CONFIG.PUMP.CHECKS.common, ...(CONFIG.PUMP.CHECKS[driver]||[])];
+  wrap.innerHTML=list.map((nm,i)=>`
+    <div class="chk-item" data-nm="${esc(nm)}">
+      <div class="nm">${i+1}. ${esc(nm)}</div>
+      <div class="pump-state">
+        <button type="button" class="st good" data-v="正常">正常</button>
+        <button type="button" class="st ng" data-v="異常">異常</button>
+        <button type="button" class="st na" data-v="不適用">不適用</button>
+      </div>
+      <div class="chk-extra"><input type="text" class="chk-note" placeholder="異常情形說明（必填）" style="margin-bottom:8px">
+        <button type="button" class="media-add chk-photo" style="padding:11px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg>異常照片</button>
+        <input type="file" class="chk-file" accept="image/*" capture="environment" hidden><div class="chk-thumb"></div></div>
+    </div>`).join("");
+  pcDraft.items={};
+  wrap.querySelectorAll(".chk-item").forEach(it=>{
+    const nm=it.dataset.nm;pcDraft.items[nm]={val:"",note:"",photo:null};
+    it.querySelectorAll(".st").forEach(btn=>btn.onclick=()=>{
+      it.querySelectorAll(".st").forEach(b=>b.classList.remove("on"));btn.classList.add("on");
+      const v=btn.dataset.v;pcDraft.items[nm].val=v;
+      it.querySelector(".chk-extra").classList.toggle("show",v==="異常");
+      computeResult();
+    });
+    const file=it.querySelector(".chk-file"),photoBtn=it.querySelector(".chk-photo"),thumb=it.querySelector(".chk-thumb");
+    photoBtn.onclick=()=>file.click();
+    it.querySelector(".chk-note").oninput=e=>pcDraft.items[nm].note=e.target.value;
+    file.onchange=async e=>{const f=e.target.files[0];if(f){const d=await compressImage(f);pcDraft.items[nm].photo=d;
+      thumb.innerHTML=`<div class="thumbs" style="margin-top:8px"><div class="thumb"><img src="${d}"></div></div>`;}e.target.value="";};
+  });
+}
+function computeResult(){
+  const vals=Object.values(pcDraft.items);
+  const anyNg=vals.some(x=>x.val==="異常");
+  const trialBad=$("#pc-start").value==="異常"||["不足","無水"].includes($("#pc-outflow").value);
+  const auto=(anyNg||trialBad)?"待修":"妥善";
+  $("#pc-result").value=auto;
+  $("#pc-autohint").textContent=`系統依點檢結果建議：${auto}（可手動調整）`;
+}
+function renderPcheck(){
+  loadPumps().then(fillPumpDropdown);
+  // 若尚未選設備則清空清單
+  if(!$("#pc-pump").value){$("#pc-checks").innerHTML="";$("#pc-meta").textContent="";}
+}
+function onPumpPicked(){
+  const p=pumpById($("#pc-pump").value);
+  $("#pf-pump").classList.remove("err");
+  if(!p){$("#pc-checks").innerHTML="";$("#pc-meta").textContent="";return;}
+  $("#pc-meta").textContent=`${p.type}・${p.driver||"未設定驅動"}・${p.sizeInch?p.sizeInch+"吋 ":""}${p.capacityCms?p.capacityCms+"cms":""}`;
+  renderChecklist(p.driver);computeResult();
+}
+async function savePcheck(){
+  const pump=pumpById($("#pc-pump").value);
+  if(!pump){$("#pf-pump").classList.add("err");toast("請先選擇抽水機","warn");return;}
+  // 異常項目需填說明
+  let bad=false;
+  document.querySelectorAll("#pc-checks .chk-item").forEach(it=>{
+    const nm=it.dataset.nm,d=pcDraft.items[nm];
+    if(d.val==="異常"&&!d.note.trim()){it.querySelector(".chk-note").style.borderColor="var(--red)";bad=true;}
+    else it.querySelector(".chk-note")&&(it.querySelector(".chk-note").style.borderColor="");
+  });
+  const unanswered=Object.values(pcDraft.items).some(x=>!x.val);
+  if(unanswered){toast("仍有點檢項目未填（正常/異常/不適用）","warn");return;}
+  if(bad){toast("異常項目請補充說明","warn");return;}
+  if(!$("#pc-sign").checked){toast("請勾選確認簽認","warn");return;}
+  if(!SETTINGS.name){toast("請先到設定填寫姓名","warn");go("set");return;}
+  const items=Object.entries(pcDraft.items).map(([name,d])=>({name,val:d.val,note:d.note,photo:d.photo||""}));
+  const rec={localId:uid(),pumpId:pump.id,pumpCode:pump.code,pumpName:pump.name,pumpType:pump.type,driver:pump.driver,
+    items,trialStart:$("#pc-start").value,trialOutflow:$("#pc-outflow").value,trialMinutes:$("#pc-min").value.trim(),trialNote:$("#pc-trialnote").value.trim(),
+    result:$("#pc-result").value,note:"",media:pcDraft.media.slice(),inspector:SETTINGS.name,inspectorUnit:SETTINGS.unit||"",
+    signed:true,createdAt:Date.now(),synced:0};
+  await pcPut(rec);
+  // 更新台帳：最後點檢、結果、下次到期
+  const fresh=pumpById(pump.id);
+  fresh.lastCheckAt=rec.createdAt;fresh.lastResult=rec.result;
+  fresh.nextDueAt=rec.createdAt+(fresh.intervalDays||CONFIG.PUMP.MAINT_INTERVAL_DAYS)*86400000;fresh.synced=0;
+  await pmPut(fresh);await loadPumps();
+  resetPcheck();toast("點檢紀錄已儲存","ok");await refreshAll();trySync();go("dash");
+}
+function resetPcheck(){
+  $("#pc-pump").value="";$("#pc-checks").innerHTML="";$("#pc-meta").textContent="";
+  $("#pc-start").value="正常";$("#pc-outflow").value="正常";$("#pc-min").value="";$("#pc-trialnote").value="";
+  $("#pc-sign").checked=false;$("#pcThumbs").innerHTML="";pcDraft={items:{},media:[]};
+}
+
+/* ===================================================================
+   抽水機：儀表板
+   =================================================================== */
+async function renderDash(){
+  await loadPumps();
+  const good=PUMPS.filter(p=>p.lastResult==="妥善").length;
+  const bad=PUMPS.filter(p=>p.lastResult==="待修").length;
+  const none=PUMPS.filter(p=>!p.lastResult).length;
+  const checked=good+bad;
+  $("#dashGood").textContent=good;$("#dashBad").textContent=bad;$("#dashNone").textContent=none;
+  $("#dashCount").textContent=`共 ${PUMPS.length} 台`;
+  $("#dashRate").textContent=checked?Math.round(good/checked*100)+"%":"—";
+  const due=[...PUMPS].filter(p=>p.nextDueAt).sort((a,b)=>a.nextDueAt-b.nextDueAt);
+  const wrap=$("#dueList");
+  if(!due.length){wrap.innerHTML=`<div class="empty" style="padding:30px"><b>尚無保養排程</b>完成點檢後會自動排下次到期日</div>`;return;}
+  wrap.innerHTML="";
+  due.forEach(p=>{const od=p.nextDueAt<Date.now();const d=fmtDate(new Date(p.nextDueAt).toISOString().slice(0,10));
+    const el=document.createElement("div");el.className="rec";el.style.alignItems="center";
+    el.innerHTML=`<div class="ph none" style="background:${od?"var(--red-bg)":"var(--surface-2)"};color:${od?"var(--red)":"var(--muted)"}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div class="body"><div class="cat" style="margin-bottom:3px">${esc(p.name||"未命名")}</div>
+        <div class="meta">${esc(p.code||"")}・保管：${esc(p.unit||"—")}</div>
+        <div class="tags"><span class="tag ${od?"unsync":"sync"}">${od?"已逾期":"到期"} ${d}</span><span class="tag ${p.lastResult==="待修"?"unsync":p.lastResult==="妥善"?"done":"sync"}">${p.lastResult||"未點檢"}</span></div></div>
+      <button class="del" data-go-pump="${p.id}" style="position:static;width:40px;height:40px;background:var(--blue-bg);color:var(--blue);border:none;border-radius:10px;flex:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>`;
+    el.querySelector("[data-go-pump]").onclick=()=>{$("#pc-pump").value=p.id;go("pcheck");onPumpPicked();};
+    wrap.appendChild(el);});
+}
+
+/* ===================================================================
    上傳同步
    =================================================================== */
 let syncing=false;
@@ -754,12 +1050,22 @@ async function trySync(manual=false){
     if(out&&out.ok){const f=await dbGet(r.localId);f.synced=1;if(out.seq)f.seq=out.seq;await dbPut(f);done++;}
     else throw new Error(out&&out.error||"伺服器錯誤");
   }catch(e){fail++;}}
+  // 抽水機台帳
+  for(const p of (await pmAll()).filter(x=>!x.synced)){try{
+    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pump",pump:p})});
+    const out=await resp.json();if(out&&out.ok){const f=pumpById(p.id);if(f){f.synced=1;await pmPut(f);}done++;}else throw 0;
+  }catch(e){fail++;}}
+  // 抽水機點檢
+  for(const c of (await pcAll()).filter(x=>!x.synced)){try{
+    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pcheck",check:c})});
+    const out=await resp.json();if(out&&out.ok){c.synced=1;await pcPut(c);done++;}else throw 0;
+  }catch(e){fail++;}}
   syncing=false;await refreshAll();
   if(done)toast(`已上傳 ${done} 筆${fail?`，${fail} 筆失敗`:""}`,fail?"warn":"ok");
   else if(fail&&manual)toast(`上傳失敗，請檢查網路（${fail} 筆）`,"err",3500);
 }
 async function updateSyncBar(n,spin){
-  if(n===undefined)n=(await dbAll()).filter(r=>!r.synced).length;
+  if(n===undefined){const a=(await dbAll()).filter(r=>!r.synced).length,b=(await pmAll()).filter(r=>!r.synced).length,c=(await pcAll()).filter(r=>!r.synced).length;n=a+b+c;}
   const bar=$("#syncbar");bar.classList.toggle("show",n>0);
   $("#syncTxt").textContent=`有 ${n} 筆待上傳`+(CONFIG.APPS_SCRIPT_URL?"":"（後端未設定）");
   bar.querySelector("svg").classList.toggle("spin",!!spin);
@@ -771,9 +1077,12 @@ async function updateSyncBar(n,spin){
 function go(v,keepNav){
   $$(".view").forEach(s=>s.classList.remove("active"));$("#view-"+v).classList.add("active");
   if(!keepNav){$$(".nav button").forEach(b=>b.classList.remove("on"));
-    const map={new:"#nav-new",list:"#nav-list",map:"#nav-map",improve:"#nav-improve",set:"#nav-set"};
+    const map={new:"#nav-new",pcheck:"#nav-new",list:"#nav-list",map:"#nav-map",improve:"#nav-improve",set:"#nav-set"};
     if(map[v])$(map[v]).classList.add("on");}
   if(v==="new")initPickMap();
+  if(v==="pcheck")renderPcheck();
+  if(v==="pumps")renderPumps();
+  if(v==="dash")renderDash();
   if(v==="list"){detailBack="list";renderList();}
   if(v==="map")initQueryMap();
   if(v==="improve"){detailBack="improve";renderImprove();}
@@ -809,6 +1118,21 @@ function bind(){
   $("#goProj").onclick=()=>go("proj");
   $("#newProjBtn").onclick=()=>openProjForm();
   $("#syncNow").onclick=()=>trySync(true);
+  // 抽水機模組
+  $$("#newSeg button").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $$("#pcheckSeg button").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $("#goPumps").onclick=()=>go("pumps");
+  $("#goDash").onclick=()=>go("dash");
+  $("#newPumpBtn").onclick=()=>openPumpForm();
+  $("#pcToPumps").onclick=()=>go("pumps");
+  $("#pc-pump").onchange=onPumpPicked;
+  $("#pc-start").onchange=computeResult;
+  $("#pc-outflow").onchange=computeResult;
+  $("#pcSave").onclick=savePcheck;
+  $("#pcMediaBtn").onclick=()=>$("#pcMediaInput").click();
+  $("#pcMediaInput").onchange=async e=>{for(const f of e.target.files){if(f.type.startsWith("image")){const d=await compressImage(f);if(d)pcDraft.media.push({type:"image",data:d});}}
+    const w=$("#pcThumbs");w.innerHTML="";pcDraft.media.forEach((m,i)=>{const t=document.createElement("div");t.className="thumb";t.innerHTML=`<img src="${m.data}"><button class="del" data-i="${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;w.appendChild(t);});
+    $$("#pcThumbs .del").forEach(b=>b.onclick=()=>{pcDraft.media.splice(+b.dataset.i,1);$("#pcMediaInput").onchange({target:{files:[]}});});e.target.value="";};
   $("#mapLocate").onclick=()=>{if(!navigator.geolocation||!queryMap)return;navigator.geolocation.getCurrentPosition(p=>queryMap.setView([p.coords.latitude,p.coords.longitude],15));};
   $("#mapDistrict").onchange=renderQueryMarkers;
   $("#listDistrict").onchange=e=>{curDist=e.target.value;renderList();};
@@ -828,8 +1152,8 @@ function bind(){
 }
 (async function start(){
   try{await openDB();}catch(e){alert("無法開啟本機資料庫，請改用 Chrome/Safari 並關閉無痕模式");return;}
-  await loadProjects();
-  fillAreaDropdowns();fillProjectDropdowns();initCatChips();bind();updateNet();await refreshAll();
+  await loadProjects();await loadPumps();
+  fillAreaDropdowns();fillProjectDropdowns();fillPumpDropdown();initCatChips();bind();updateNet();await refreshAll();
   if(!SETTINGS.name || !SETTINGS.unit){   // 首次或缺單位：先填姓名＋單位 → 巡檢填報
     $("#ob-name").value=SETTINGS.name||"";$("#ob-unit").value=SETTINGS.unit||"";
     $("#onboard").classList.add("show");
