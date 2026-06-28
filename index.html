@@ -310,6 +310,7 @@
       <div class="card-h"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span><h2>巡檢人員<span>INSPECTOR</span></h2></div>
       <div class="card-b">
         <div class="field"><label class="lbl">姓名 <span class="req">*</span></label><input type="text" id="s-name" placeholder="例：王承辦"></div>
+        <div class="field"><label class="lbl">單位 <span class="req">*</span></label><input type="text" id="s-unit" placeholder="例：養護工程處 養護課"></div>
         <button class="btn btn-primary" id="setSave">儲存</button>
       </div>
     </div>
@@ -339,9 +340,11 @@
 <div class="onboard" id="onboard">
   <div class="ob-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
   <h1>歡迎使用巡檢通報</h1>
-  <p>開始之前，請先填寫您的姓名，做為巡檢人員紀錄。</p>
+  <p>開始之前，請先填寫您的姓名與單位，做為填報人紀錄。</p>
   <label>巡檢人員姓名</label>
   <input type="text" id="ob-name" placeholder="例：王承辦" autocomplete="name">
+  <label style="margin-top:14px">單位</label>
+  <input type="text" id="ob-unit" placeholder="例：養護工程處 養護課">
   <div class="ob-err" id="ob-err"></div>
   <button class="btn" id="ob-go">開始巡檢填報 →</button>
 </div>
@@ -371,13 +374,16 @@ const CONFIG = {
   VIDEO_MAX_MB: 25, IMG_MAX_EDGE: 1600, IMG_QUALITY: 0.78,
 };
 
-/* Leaflet 預設圖示改用本機圖檔 */
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:"assets/leaflet/images/marker-icon-2x.png",
-  iconUrl:"assets/leaflet/images/marker-icon.png",
-  shadowUrl:"assets/leaflet/images/marker-shadow.png",
-});
+/* Leaflet 預設圖示改用本機圖檔（若地圖元件未載入，整段略過，不影響其他功能） */
+const HAS_MAP = (typeof L !== "undefined");
+if(HAS_MAP){
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl:"assets/leaflet/images/marker-icon-2x.png",
+    iconUrl:"assets/leaflet/images/marker-icon.png",
+    shadowUrl:"assets/leaflet/images/marker-shadow.png",
+  });
+}
 const TILE_URL="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_OPT={maxZoom:19,attribution:"© OpenStreetMap"};
 
@@ -457,6 +463,7 @@ function initCatChips(){
    =================================================================== */
 let pickMap,pickMarker;
 function initPickMap(){
+  if(!HAS_MAP){$("#pickMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:13px;text-align:center;padding:14px;line-height:1.6">地圖元件未載入<br>仍可按右下定位鈕或填寫地標</div>';return;}
   if(pickMap){setTimeout(()=>pickMap.invalidateSize(),120);return;}
   pickMap=L.map("pickMap",{zoomControl:true}).setView(CONFIG.MAP_CENTER,CONFIG.MAP_ZOOM);
   L.tileLayer(TILE_URL,TILE_OPT).addTo(pickMap);
@@ -489,6 +496,7 @@ function locateMe(){
    =================================================================== */
 let queryMap,qMarkers=[];
 function initQueryMap(){
+  if(!HAS_MAP){$("#queryMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:14px;text-align:center;padding:24px;line-height:1.6">地圖元件未載入<br>請確認已連網，且整包含 assets/leaflet 資料夾已部署</div>';$("#mapCount").textContent="";return;}
   if(!queryMap){queryMap=L.map("queryMap").setView(CONFIG.MAP_CENTER,CONFIG.MAP_ZOOM);L.tileLayer(TILE_URL,TILE_OPT).addTo(queryMap);}
   setTimeout(()=>{queryMap.invalidateSize();renderQueryMarkers();},200);
 }
@@ -549,7 +557,7 @@ async function saveInspection(){
     area,landmark:$("#i-landmark").value.trim(),lat:draft.lat,lng:draft.lng,acc:draft.acc,
     categories:draft.cats.slice(),otherDamage:otherSel?otherTxt:"",
     condition:cond,note:$("#i-note").value.trim(),media:draft.media.slice(),
-    inspector:SETTINGS.name,createdAt:Date.now(),status:"待改善",improvements:[],synced:0};
+    inspector:SETTINGS.name,inspectorUnit:SETTINGS.unit||"",createdAt:Date.now(),status:"待改善",improvements:[],synced:0};
   const btn=$("#newSave");btn.disabled=true;
   try{await dbPut(rec);resetForm();toast("已儲存到本機","ok");await refreshAll();trySync();go("list");}
   catch(e){toast("儲存失敗："+e.message,"err");}
@@ -632,7 +640,7 @@ async function openDetail(id){
       <div class="kv"><span class="k">破損狀況</span><span class="v">${esc(r.condition)}</span></div>
       ${r.note?`<div class="kv"><span class="k">其他描述</span><span class="v">${esc(r.note)}</span></div>`:""}
       <div class="kv"><span class="k">建立時間</span><span class="v">${fmtTime(r.createdAt)}</span></div>
-      <div class="kv"><span class="k">巡檢人員</span><span class="v">${esc(r.inspector)}</span></div>
+      <div class="kv"><span class="k">巡檢人員</span><span class="v">${esc(r.inspector)}${r.inspectorUnit?`（${esc(r.inspectorUnit)}）`:""}</span></div>
       ${r.media.length>1?`<div class="kv"><span class="k">所有媒體</span><span class="v"><div class="gallery">${gallery}</div></span></div>`:""}
     </div></div>
     <div class="card"><div class="card-h"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span><h2>改善追蹤<span>IMPROVEMENT</span></h2></div>
@@ -781,10 +789,11 @@ async function refreshAll(){await updateSyncBar();$("#localCount").textContent=(
   if($("#view-map").classList.contains("active"))renderQueryMarkers();
   if($("#view-improve").classList.contains("active"))renderImprove();}
 
-function fillSettings(){$("#s-name").value=SETTINGS.name||"";
+function fillSettings(){$("#s-name").value=SETTINGS.name||"";$("#s-unit").value=SETTINGS.unit||"";
   const pill=$("#connPill");if(CONFIG.APPS_SCRIPT_URL){pill.className="ok-pill on";pill.textContent="已設定";}else{pill.className="ok-pill off";pill.textContent="未設定";}}
-function saveSettings(){const name=$("#s-name").value.trim();if(!name){toast("請填寫姓名","warn");return;}
-  SETTINGS.name=name;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));toast("已儲存","ok");}
+function saveSettings(){const name=$("#s-name").value.trim(),unit=$("#s-unit").value.trim();
+  if(!name){toast("請填寫姓名","warn");return;}if(!unit){toast("請填寫單位","warn");return;}
+  SETTINGS.name=name;SETTINGS.unit=unit;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));toast("已儲存","ok");}
 
 /* ===================================================================
    綁定 + 啟動
@@ -809,17 +818,22 @@ function bind(){
   $$("#impFilters .fbtn").forEach(b=>b.onclick=()=>{$$("#impFilters .fbtn").forEach(x=>x.classList.remove("on"));b.classList.add("on");impFilter=b.dataset.f;renderImprove();});
   window.addEventListener("online",updateNet);window.addEventListener("offline",updateNet);
   // onboarding
-  $("#ob-go").onclick=()=>{const n=$("#ob-name").value.trim();if(!n){$("#ob-err").textContent="請輸入姓名";return;}
-    SETTINGS.name=n;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));
+  $("#ob-go").onclick=()=>{const n=$("#ob-name").value.trim(),u=$("#ob-unit").value.trim();
+    if(!n){$("#ob-err").textContent="請輸入姓名";return;}
+    if(!u){$("#ob-err").textContent="請輸入單位";return;}
+    SETTINGS.name=n;SETTINGS.unit=u;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));
     $("#onboard").classList.remove("show");go("new");};
+  $("#ob-unit").addEventListener("keydown",e=>{if(e.key==="Enter")$("#ob-go").click();});
   $("#ob-name").addEventListener("keydown",e=>{if(e.key==="Enter")$("#ob-go").click();});
 }
 (async function start(){
   try{await openDB();}catch(e){alert("無法開啟本機資料庫，請改用 Chrome/Safari 並關閉無痕模式");return;}
   await loadProjects();
   fillAreaDropdowns();fillProjectDropdowns();initCatChips();bind();updateNet();await refreshAll();
-  if(!SETTINGS.name){$("#onboard").classList.add("show");}   // 首次：先填姓名 → 巡檢填報
-  else{go("new");}
+  if(!SETTINGS.name || !SETTINGS.unit){   // 首次或缺單位：先填姓名＋單位 → 巡檢填報
+    $("#ob-name").value=SETTINGS.name||"";$("#ob-unit").value=SETTINGS.unit||"";
+    $("#onboard").classList.add("show");
+  }else{go("new");}
   if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>

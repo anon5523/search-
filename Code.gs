@@ -20,7 +20,7 @@ var MEDIA_FOLDER_NAME = '巡檢照片';
 var DEFAULT_TAB = '未分類';
 
 var HEADERS = ['項次','localId','所屬專案','行政區','地標/位置','緯度','經度','GPS精度(m)',
-               '破損類別','破損狀況','其他描述','巡檢人員','建立時間','狀態',
+               '破損類別','破損狀況','其他描述','巡檢人員','填報單位','建立時間','狀態',
                '照片/影片連結','改善次數','最新改善單位','最新改善工法','最新改善後狀態',
                '最新改善日期','改善照片連結','最後更新'];
 
@@ -72,7 +72,7 @@ function buildRow_(seq, r, mediaLinks, last, impLinks, impCount) {
   return [
     seq, r.localId, r.projectName || DEFAULT_TAB, r.area || '',
     r.landmark || '', r.lat || '', r.lng || '', r.acc || '',
-    (r.categories || []).join('、'), r.condition || '', r.note || '', r.inspector || '',
+    (r.categories || []).join('、'), r.condition || '', r.note || '', r.inspector || '', r.inspectorUnit || '',
     r.createdAt ? new Date(r.createdAt) : '', r.status || '',
     mediaLinks, impCount,
     last ? (last.unit || '') : '',
