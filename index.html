@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#13263F">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="assets/leaflet/leaflet.css">
 <title>巡檢通報系統</title>
 <style>
@@ -126,6 +127,20 @@
   .gauge{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;text-align:center}
   .gauge .big{font-size:40px;font-weight:850;color:var(--green)}
   .gauge .cap{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px}
+  .home-hero{background:var(--navy);color:#fff;border-radius:16px;padding:18px 18px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .home-hero h2{font-size:18px;margin-bottom:3px}
+  .home-hero p{margin:0;font-size:13px;color:#aebfd4}
+  .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mod{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px;text-align:left;align-items:flex-start}
+  .mod:active{transform:scale(.98)}
+  .mod .ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center}
+  .mod .ico svg{width:22px;height:22px}
+  .mod b{font-size:15.5px;font-weight:700;color:var(--ink)}
+  .mod span{font-size:12px;color:var(--muted);line-height:1.4}
+  .mod.wide{grid-column:1 / -1;flex-direction:row;align-items:center}
+  .mod.wide .ico{flex:none}
+  .stat-row{display:flex;gap:10px;margin-bottom:12px}
+  .stat-row .dash-cell{flex:1}
   .rec{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 15px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start}
   .rec .ph{width:58px;height:58px;border-radius:10px;flex:none;background:#0b1119;overflow:hidden;position:relative}
   .rec .ph img{width:100%;height:100%;object-fit:cover}
@@ -197,7 +212,7 @@
 <body>
 
 <header class="topbar">
-  <div class="brand">
+  <div class="brand" id="brandHome" style="cursor:pointer">
     <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
     <div><b>巡檢通報系統</b><small id="brandSub">臺南市・FIELD INSPECTION</small></div>
   </div>
@@ -206,8 +221,42 @@
 
 <main class="wrap">
 
+  <!-- ===== 主頁 ===== -->
+  <section class="view active" id="view-home">
+    <div class="home-hero">
+      <h2 id="homeHello">臺南市巡檢通報</h2>
+      <p>選擇下方模組開始作業。資料離線可建檔，連線後自動同步。</p>
+    </div>
+    <div class="home-grid">
+      <button class="mod" data-go="new"><span class="ico" style="background:var(--navy-bg);color:var(--navy-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span><b>巡檢填報</b><span>設施巡查與抽水機點檢</span></button>
+      <button class="mod" data-go="list"><span class="ico" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span><b>巡檢查詢</b><span>清單＋地圖檢視</span></button>
+      <button class="mod" data-go="map"><span class="ico" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 3v12l6-3 6 3 6-3V6l-6 3-6-3z"/><path d="M9 6v12M15 9v12"/></svg></span><b>地圖查詢</b><span>全部破損點地圖</span></button>
+      <button class="mod" data-go="improve"><span class="ico" style="background:var(--amber-bg);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span><b>改善填報</b><span>致災原因與短中長期作為</span></button>
+      <button class="mod" data-go="pcheck"><span class="ico" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><b>抽水機點檢</b><span>型式對應點檢表</span></button>
+      <button class="mod" data-go="dash"><span class="ico" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.2-8.5"/><path d="M12 12l5-3"/></svg></span><b>抽水機儀表板</b><span>妥善率／保養到期</span></button>
+      <button class="mod" data-go="pumps"><span class="ico" style="background:var(--surface-2);color:var(--ink-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><b>抽水機台帳</b><span>Excel 範本匯入</span></button>
+      <button class="mod" data-go="stats"><span class="ico" style="background:var(--navy-bg);color:var(--navy-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><b>統計總覽</b><span>各狀態與行政區彙整</span></button>
+      <button class="mod wide" data-go="proj"><span class="ico" style="background:var(--amber-bg);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><div><b>專案管理</b><br><span>建立／編輯專案（全裝置共用）</span></div></button>
+      <button class="mod wide" data-go="set"><span class="ico" style="background:var(--surface-2);color:var(--ink-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span><div><b>設定</b><br><span>人員、後端連線</span></div></button>
+    </div>
+    <div style="height:14px"></div>
+  </section>
+
+  <!-- ===== 統計總覽 ===== -->
+  <section class="view" id="view-stats">
+    <div class="list-head"><h2>統計總覽</h2><span id="statsTotal" style="font-size:13px;color:var(--muted);font-weight:600"></span></div>
+    <div class="stat-row">
+      <div class="dash-cell"><div class="n" style="color:var(--amber)" id="stWait">0</div><div class="l">待改善</div></div>
+      <div class="dash-cell"><div class="n" style="color:var(--blue)" id="stProg">0</div><div class="l">改善中</div></div>
+      <div class="dash-cell"><div class="n" style="color:var(--green)" id="stDone">0</div><div class="l">已改善</div></div>
+    </div>
+    <div class="card"><div class="card-h"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><h2>依破損類別<span>BY CATEGORY</span></h2></div><div class="card-b" id="statsCat"></div></div>
+    <div class="card"><div class="card-h"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span><h2>依行政區（前 10）<span>BY DISTRICT</span></h2></div><div class="card-b" id="statsArea"></div></div>
+    <div style="height:14px"></div>
+  </section>
+
   <!-- ===== 巡檢填報 ===== -->
-  <section class="view active" id="view-new">
+  <section class="view" id="view-new">
     <div class="seg" id="newSeg">
       <button class="on" data-go="new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>設施巡查</button>
       <button data-go="pcheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>抽水機點檢</button>
@@ -289,6 +338,7 @@
     </div>
     <div class="field" style="margin-bottom:10px"><select id="listDistrict"><option value="all">所有行政區</option></select></div>
     <div class="field" style="margin-bottom:14px"><select id="projFilter"><option value="all">所有專案</option><option value="none">未分類</option></select></div>
+    <div id="listMap" style="height:240px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line);margin-bottom:14px"></div>
     <div id="recList"></div>
   </section>
 
@@ -400,7 +450,12 @@
   <!-- ===== 抽水機台帳 ===== -->
   <section class="view" id="view-pumps">
     <div class="list-head"><h2>抽水機台帳</h2><span id="pumpCount" style="font-size:13px;color:var(--muted);font-weight:600"></span></div>
-    <button class="btn btn-primary" id="newPumpBtn" style="margin-bottom:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增抽水機</button>
+    <button class="btn btn-primary" id="newPumpBtn" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增抽水機</button>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <a class="btn btn-ghost" href="抽水機台帳範本.xlsx" download style="flex:1;text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>下載 Excel 範本</a>
+      <button class="btn btn-ghost" id="importPumpBtn" style="flex:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>匯入台帳</button>
+      <input type="file" id="importPumpInput" accept=".xlsx,.xls,.csv" hidden>
+    </div>
     <div id="pumpList"></div>
   </section>
   <section class="view" id="view-pumpform"></section>
@@ -442,7 +497,8 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="assets/leaflet/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>if(typeof L==="undefined"){document.write('<script src="assets/leaflet/leaflet.js"><\/script>');}</script>
 <script>
 "use strict";
 /* ===================================================================
@@ -482,9 +538,9 @@ const HAS_MAP = (typeof L !== "undefined");
 if(HAS_MAP){
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl:"assets/leaflet/images/marker-icon-2x.png",
-    iconUrl:"assets/leaflet/images/marker-icon.png",
-    shadowUrl:"assets/leaflet/images/marker-shadow.png",
+    iconRetinaUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+    iconUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+    shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
   });
 }
 const TILE_URL="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -516,7 +572,7 @@ function pmDel(id){return new Promise((res,rej)=>{const q=tx(PUMP,"readwrite").d
 function pcPut(r){return new Promise((res,rej)=>{const q=tx(PCHK,"readwrite").put(r);q.onsuccess=res;q.onerror=rej;});}
 function pcAll(){return new Promise((res,rej)=>{const q=tx(PCHK,"readonly").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=rej;});}
 let PROJECTS=[],PUMPS=[];
-async function loadProjects(){PROJECTS=(await pjAll()).sort((a,b)=>b.createdAt-a.createdAt);}
+async function loadProjects(){PROJECTS=(await pjAll()).filter(p=>!p.deleted).sort((a,b)=>b.createdAt-a.createdAt);}
 async function loadPumps(){PUMPS=(await pmAll()).sort((a,b)=>(a.code||"").localeCompare(b.code||""));}
 const projName=id=>{const p=PROJECTS.find(x=>x.id===id);return p?p.name:"";};
 const pumpById=id=>PUMPS.find(x=>x.id===id);
@@ -606,9 +662,26 @@ function locateMe(){
 /* ===================================================================
    地圖：查詢
    =================================================================== */
-let queryMap,qMarkers=[];
+let queryMap,qMarkers=[],listMap,lMarkers=[];
+function markerPopupHTML(r){
+  const pn=projName(r.projectId);
+  const cover=r.media.find(m=>m.type==="image");
+  const lastImp=(r.improvements||[]).slice().reverse().find(im=>im.media&&im.media.length);
+  const impImg=lastImp?lastImp.media.find(m=>m.type==="image"):null;
+  let thumbs="";
+  if(cover||impImg){
+    thumbs='<div style="display:flex;gap:6px;margin:7px 0">'
+      +(cover?`<div style="text-align:center"><img src="${cover.data}" style="width:84px;height:64px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:10px;color:#6b7888">巡檢</span></div>`:"")
+      +(impImg?`<div style="text-align:center"><img src="${impImg.data}" style="width:84px;height:64px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:10px;color:#157f3b">改善</span></div>`:"")
+      +'</div>';
+  }
+  return `<b>${esc(r.categories[0]||"—")}</b>${r.categories.length>1?` +${r.categories.length-1}`:""}<br>`
+    +(pn?`專案：${esc(pn)}<br>`:"")+`${esc(r.area)} ${esc(r.landmark||"")}<br>狀態：${esc(r.status)}`
+    +thumbs
+    +`<button onclick="__openDetail('${r.localId}')" style="margin-top:4px;padding:6px 12px;border:none;border-radius:8px;background:#1d4e89;color:#fff;font-weight:700">開啟詳情</button>`;
+}
 function initQueryMap(){
-  if(!HAS_MAP){$("#queryMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:14px;text-align:center;padding:24px;line-height:1.6">地圖元件未載入<br>請確認已連網，且整包含 assets/leaflet 資料夾已部署</div>';$("#mapCount").textContent="";return;}
+  if(!HAS_MAP){$("#queryMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:14px;text-align:center;padding:24px;line-height:1.6">地圖元件未載入<br>請確認手機已連上網路後重開</div>';$("#mapCount").textContent="";return;}
   if(!queryMap){queryMap=L.map("queryMap").setView(CONFIG.MAP_CENTER,CONFIG.MAP_ZOOM);L.tileLayer(TILE_URL,TILE_OPT).addTo(queryMap);}
   setTimeout(()=>{queryMap.invalidateSize();renderQueryMarkers();},200);
 }
@@ -618,14 +691,22 @@ async function renderQueryMarkers(){
   const all=await dbAll(),dist=$("#mapDistrict").value;
   const pts=all.filter(r=>r.lat&&r.lng&&(dist==="all"||r.area===dist));
   const b=[];
-  pts.forEach(r=>{const m=L.marker([r.lat,r.lng]).addTo(queryMap);
-    const pn=projName(r.projectId);
-    m.bindPopup(`<b>${esc(r.categories[0]||"—")}</b>${r.categories.length>1?` +${r.categories.length-1}`:""}<br>`
-      +(pn?`專案：${esc(pn)}<br>`:"")+`${esc(r.area)} ${esc(r.landmark||"")}<br>狀態：${esc(r.status)}`
-      +`<br><button onclick="__openDetail('${r.localId}')" style="margin-top:7px;padding:6px 12px;border:none;border-radius:8px;background:#1d4e89;color:#fff;font-weight:700">開啟詳情</button>`);
-    qMarkers.push(m);b.push([r.lat,r.lng]);});
+  pts.forEach(r=>{const m=L.marker([r.lat,r.lng]).addTo(queryMap);m.bindPopup(markerPopupHTML(r),{minWidth:200});qMarkers.push(m);b.push([r.lat,r.lng]);});
   $("#mapCount").textContent=`地圖上 ${pts.length} 點`;
   if(b.length)queryMap.fitBounds(b,{padding:[40,40],maxZoom:15});
+}
+/* 查詢頁的地圖（與篩選連動） */
+function initListMap(){
+  if(!HAS_MAP){$("#listMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:13px;text-align:center;padding:14px">地圖元件未載入（請連網後重開）</div>';return;}
+  if(!listMap){listMap=L.map("listMap").setView(CONFIG.MAP_CENTER,CONFIG.MAP_ZOOM);L.tileLayer(TILE_URL,TILE_OPT).addTo(listMap);}
+  setTimeout(()=>listMap.invalidateSize(),180);
+}
+function renderListMap(data){
+  if(!listMap)return;
+  lMarkers.forEach(m=>listMap.removeLayer(m));lMarkers=[];
+  const pts=data.filter(r=>r.lat&&r.lng);const b=[];
+  pts.forEach(r=>{const m=L.marker([r.lat,r.lng]).addTo(listMap);m.bindPopup(markerPopupHTML(r),{minWidth:200});lMarkers.push(m);b.push([r.lat,r.lng]);});
+  if(b.length)listMap.fitBounds(b,{padding:[30,30],maxZoom:15});
 }
 
 /* ===================================================================
@@ -710,6 +791,7 @@ async function renderList(){
     const ds=curDist==="all"?true:r.area===curDist;
     return st&&pj&&ds;});
   $("#listCount").textContent=`共 ${all.length} 筆`;
+  renderListMap(data);
   const wrap=$("#recList");
   if(!data.length){wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><b>沒有符合的紀錄</b>調整篩選或到「填報」新增</div>`;return;}
   wrap.innerHTML="";data.forEach(r=>{const el=document.createElement("div");el.className="rec";el.innerHTML=recCardHTML(r);el.onclick=()=>openDetail(r.localId);wrap.appendChild(el);});
@@ -737,7 +819,7 @@ async function openDetail(id){
   const r=await dbGet(id);if(!r)return;
   const cover=r.media[0];
   const gallery=r.media.map(m=>`<div class="g">${m.type==="video"?`<video src="${m.data}" muted playsinline></video>`:`<img src="${m.data}">`}</div>`).join("");
-  const imps=r.improvements.map((im,i)=>`<div class="kv"><span class="k">改善 ${i+1}</span><span class="v"><b>${esc(im.unit)}</b><br>工法：${esc(im.method)}<br><span style="color:var(--muted)">${fmtTime(im.date)}・${esc(im.status)}</span>${im.media&&im.media.length?`<div class="gallery">${im.media.map(m=>`<div class="g"><img src="${m.data}"></div>`).join("")}</div>`:""}</span></div>`).join("")||`<div class="kv"><span class="k">改善紀錄</span><span class="v" style="color:var(--muted)">尚無改善紀錄</span></div>`;
+  const imps=r.improvements.map((im,i)=>`<div class="kv"><span class="k">改善 ${i+1}</span><span class="v"><b>${esc(im.unit)}</b>${im.signed?' <span style="color:var(--green);font-size:11px">✓已簽認</span>':''}<br>${im.cause?`<span style="color:var(--muted)">致災原因：</span>${esc(im.cause)}<br>`:""}工法：${esc(im.method)}<br>${im.shortTerm?`短期：${esc(im.shortTerm)}<br>`:""}${im.midTerm?`中期：${esc(im.midTerm)}<br>`:""}${im.longTerm?`長期：${esc(im.longTerm)}<br>`:""}${im.deadline?`期限：${fmtDate(im.deadline)}　`:""}${im.assignee?`負責人：${esc(im.assignee)}<br>`:""}<span style="color:var(--muted)">${fmtTime(im.date)}・${esc(im.status)}</span>${im.media&&im.media.length?`<div class="gallery">${im.media.map(m=>`<div class="g"><img src="${m.data}"></div>`).join("")}</div>`:""}</span></div>`).join("")||`<div class="kv"><span class="k">改善紀錄</span><span class="v" style="color:var(--muted)">尚無改善紀錄</span></div>`;
   $("#view-detail").innerHTML=`
     <button class="btn btn-ghost" id="backBtn" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>返回</button>
     <div class="detail-cover">${cover?(cover.type==="video"?`<video src="${cover.data}" controls playsinline></video>`:`<img src="${cover.data}">`):""}</div>
@@ -774,12 +856,21 @@ function openImpForm(id,back){
     <button class="btn btn-ghost" id="impBack" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>取消</button>
     <div class="card"><div class="card-h"><span class="ic" style="background:var(--amber-bg);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span><h2>新增改善紀錄<span>IMPROVEMENT</span></h2></div>
       <div class="card-b">
+        <div class="field"><label class="lbl">致災原因 <span class="req">*</span></label><textarea id="im-cause" placeholder="例：連日豪雨致路基掏空、河水暴漲沖刷護岸…"></textarea><div class="errmsg">請填寫致災原因</div></div>
         <div class="field"><label class="lbl">改善單位 <span class="req">*</span></label><input type="text" id="im-unit" placeholder="例：養護工程處 / 第六河川分署"><div class="errmsg">請填寫改善單位</div></div>
         <div class="field"><label class="lbl">改善工法 <span class="req">*</span></label><textarea id="im-method" placeholder="例：路面刨除重鋪 AC、灌漿補強、拋石護岸…"></textarea><div class="errmsg">請填寫改善工法</div></div>
+        <div class="field"><label class="lbl">短期改善作為 <span class="opt">緊急/搶險</span></label><textarea id="im-short" placeholder="例：設置警示、臨時填補、抽排積水…"></textarea></div>
+        <div class="field"><label class="lbl">中期改善作為 <span class="opt">汛期內</span></label><textarea id="im-mid" placeholder="例：發包小型修復工程…"></textarea></div>
+        <div class="field"><label class="lbl">長期改善作為 <span class="opt">治本</span></label><textarea id="im-long" placeholder="例：納入年度治理計畫、護岸重建…"></textarea></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label class="lbl">改善期限</label><input type="date" id="im-deadline"></div>
+          <div class="field" style="flex:1"><label class="lbl">負責人</label><input type="text" id="im-assignee" placeholder="承辦/廠商"></div>
+        </div>
         <div class="field"><label class="lbl">改善後狀態 <span class="req">*</span></label><select id="im-status"><option value="改善中">改善中</option><option value="已改善">已改善（完工）</option></select></div>
         <div class="field"><label class="lbl">改善照片 <span class="opt">建議上傳</span></label>
           <button type="button" class="media-add" id="imMediaBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg>拍攝改善照片</button>
           <input type="file" id="imMediaInput" accept="image/*" capture="environment" multiple hidden><div class="thumbs" id="imThumbs"></div></div>
+        <label class="lbl" style="align-items:flex-start;gap:9px;cursor:pointer;margin-bottom:16px"><input type="checkbox" id="im-sign" style="width:20px;height:20px;margin-top:1px;flex:none">本人確認改善內容屬實</label>
         <button class="btn btn-amber" id="imSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>儲存改善紀錄</button>
       </div></div><div style="height:14px"></div>`;
   const goBack=()=>back==="improve"?go("improve"):openDetail(id);
@@ -787,11 +878,16 @@ function openImpForm(id,back){
   $("#imMediaBtn").onclick=()=>$("#imMediaInput").click();
   $("#imMediaInput").onchange=async e=>{for(const f of e.target.files){if(f.type.startsWith("image")){const d=await compressImage(f);if(d)impDraft.media.push({type:"image",data:d});}}drawImpThumbs();e.target.value="";};
   $("#imSave").onclick=async()=>{
-    const unit=$("#im-unit").value.trim(),method=$("#im-method").value.trim();
+    const unit=$("#im-unit").value.trim(),method=$("#im-method").value.trim(),cause=$("#im-cause").value.trim();
+    $("#im-cause").parentElement.classList.toggle("err",!cause);
     $("#im-unit").parentElement.classList.toggle("err",!unit);$("#im-method").parentElement.classList.toggle("err",!method);
-    if(!unit||!method){toast("請完成必填欄位","warn");return;}
+    if(!cause||!unit||!method){toast("請完成必填欄位","warn");return;}
+    if(!$("#im-sign").checked){toast("請勾選確認簽認","warn");return;}
     const r=await dbGet(id);
-    r.improvements.push({unit,method,status:$("#im-status").value,date:Date.now(),media:impDraft.media.slice()});
+    r.improvements.push({cause,unit,method,
+      shortTerm:$("#im-short").value.trim(),midTerm:$("#im-mid").value.trim(),longTerm:$("#im-long").value.trim(),
+      deadline:$("#im-deadline").value,assignee:$("#im-assignee").value.trim(),
+      status:$("#im-status").value,date:Date.now(),signed:true,media:impDraft.media.slice()});
     r.status=$("#im-status").value;r.synced=0;await dbPut(r);
     toast("改善紀錄已儲存","ok");await refreshAll();trySync();
     back==="improve"?go("improve"):openDetail(id);};
@@ -839,10 +935,11 @@ function openProjForm(id){
     $("#pj-name").parentElement.classList.toggle("err",!name);if(!name){toast("請填寫專案名稱","warn");return;}
     const bad=s&&e&&e<s;$("#pj-start").parentElement.classList.toggle("err",bad);if(bad){toast("結束日期不可早於開始日期","warn");return;}
     const proj=p?{...p}:{id:uid(),createdAt:Date.now()};proj.name=name;proj.startDate=s;proj.endDate=e;proj.note=$("#pj-note").value.trim();
-    await pjPut(proj);await loadProjects();fillProjectDropdowns();toast(p?"專案已更新":"專案已建立","ok");go("proj");};
+    proj.synced=0;proj.deleted=false;
+    await pjPut(proj);await loadProjects();fillProjectDropdowns();toast(p?"專案已更新":"專案已建立","ok");trySync();go("proj");};
   if(p)$("#pjDel").onclick=async()=>{if(!confirm(`確定刪除專案「${p.name}」？\n該專案下的巡檢紀錄會改為「未分類」，紀錄本身不會被刪除。`))return;
     const all=await dbAll();for(const r of all){if(r.projectId===p.id){r.projectId="";await dbPut(r);}}
-    await pjDel(p.id);await loadProjects();fillProjectDropdowns();toast("專案已刪除","ok");go("proj");};
+    await pjPut({...p,deleted:true,synced:0});await loadProjects();fillProjectDropdowns();toast("專案已刪除","ok");trySync();go("proj");};
   go("projform",true);
 }
 
@@ -1039,8 +1136,9 @@ async function trySync(manual=false){
   if(!CONFIG.APPS_SCRIPT_URL){if(manual)toast("後端尚未設定（請管理者於程式內填入網址）","warn",3500);return;}
   if(!navigator.onLine){if(manual)toast("目前離線，恢復網路後將自動上傳","warn",3200);return;}
   const pending=(await dbAll()).filter(r=>!r.synced);
-  if(!pending.length){if(manual)toast("沒有待上傳的紀錄","ok");return;}
-  syncing=true;updateSyncBar(pending.length,true);
+  const others=(await pmAll()).filter(x=>!x.synced).length+(await pcAll()).filter(x=>!x.synced).length+(await pjAll()).filter(x=>!x.synced).length;
+  if(!pending.length && !others){if(manual)toast("沒有待上傳的紀錄","ok");await pullShared();return;}
+  syncing=true;updateSyncBar(pending.length+others,true);
   let done=0,fail=0;
   for(const r of pending){try{
     const note=r.note+(r.otherDamage?`\n【其他破損】${r.otherDamage}`:"");
@@ -1055,17 +1153,36 @@ async function trySync(manual=false){
     const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pump",pump:p})});
     const out=await resp.json();if(out&&out.ok){const f=pumpById(p.id);if(f){f.synced=1;await pmPut(f);}done++;}else throw 0;
   }catch(e){fail++;}}
+  // 專案（共用清單）
+  for(const p of (await pjAll()).filter(x=>!x.synced)){try{
+    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"project",project:p})});
+    const out=await resp.json();if(out&&out.ok){if(p.deleted){await pjDel(p.id);}else{p.synced=1;await pjPut(p);}done++;}else throw 0;
+  }catch(e){fail++;}}
   // 抽水機點檢
   for(const c of (await pcAll()).filter(x=>!x.synced)){try{
     const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pcheck",check:c})});
     const out=await resp.json();if(out&&out.ok){c.synced=1;await pcPut(c);done++;}else throw 0;
   }catch(e){fail++;}}
+  await pullShared();                                   // 上傳後拉回共用清單
   syncing=false;await refreshAll();
   if(done)toast(`已上傳 ${done} 筆${fail?`，${fail} 筆失敗`:""}`,fail?"warn":"ok");
   else if(fail&&manual)toast(`上傳失敗，請檢查網路（${fail} 筆）`,"err",3500);
 }
+/* 拉回共用清單（專案 + 抽水機台帳），讓各裝置同步 */
+async function pullShared(){
+  if(!CONFIG.APPS_SCRIPT_URL||!navigator.onLine)return;
+  try{
+    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pull"})});
+    const out=await resp.json();if(!out||!out.ok)return;
+    const localPj=(await pjAll()).filter(p=>!p.synced).map(p=>p.id);
+    for(const p of (out.projects||[]))if(!localPj.includes(p.id))await pjPut({...p,synced:1,deleted:false});
+    const localPm=(await pmAll()).filter(p=>!p.synced).map(p=>p.id);
+    for(const p of (out.pumps||[]))if(!localPm.includes(p.id))await pmPut({...p,synced:1});
+    await loadProjects();await loadPumps();fillProjectDropdowns();fillPumpDropdown();
+  }catch(e){}
+}
 async function updateSyncBar(n,spin){
-  if(n===undefined){const a=(await dbAll()).filter(r=>!r.synced).length,b=(await pmAll()).filter(r=>!r.synced).length,c=(await pcAll()).filter(r=>!r.synced).length;n=a+b+c;}
+  if(n===undefined){const a=(await dbAll()).filter(r=>!r.synced).length,b=(await pmAll()).filter(r=>!r.synced).length,c=(await pcAll()).filter(r=>!r.synced).length,d=(await pjAll()).filter(r=>!r.synced).length;n=a+b+c+d;}
   const bar=$("#syncbar");bar.classList.toggle("show",n>0);
   $("#syncTxt").textContent=`有 ${n} 筆待上傳`+(CONFIG.APPS_SCRIPT_URL?"":"（後端未設定）");
   bar.querySelector("svg").classList.toggle("spin",!!spin);
@@ -1080,10 +1197,12 @@ function go(v,keepNav){
     const map={new:"#nav-new",pcheck:"#nav-new",list:"#nav-list",map:"#nav-map",improve:"#nav-improve",set:"#nav-set"};
     if(map[v])$(map[v]).classList.add("on");}
   if(v==="new")initPickMap();
+  if(v==="home"){$("#homeHello").textContent=(SETTINGS.name?SETTINGS.name+"，":"")+"臺南市巡檢通報";}
+  if(v==="stats")renderStats();
   if(v==="pcheck")renderPcheck();
   if(v==="pumps")renderPumps();
   if(v==="dash")renderDash();
-  if(v==="list"){detailBack="list";renderList();}
+  if(v==="list"){detailBack="list";initListMap();renderList();}
   if(v==="map")initQueryMap();
   if(v==="improve"){detailBack="improve";renderImprove();}
   if(v==="proj")renderProjects();
@@ -1091,6 +1210,27 @@ function go(v,keepNav){
   window.scrollTo({top:0});
 }
 window.__openDetail=id=>openDetail(id);
+
+async function renderStats(){
+  const all=await dbAll();
+  $("#statsTotal").textContent=`共 ${all.length} 筆`;
+  $("#stWait").textContent=all.filter(r=>r.status==="待改善").length;
+  $("#stProg").textContent=all.filter(r=>r.status==="改善中").length;
+  $("#stDone").textContent=all.filter(r=>r.status==="已改善").length;
+  const byCat={},byArea={};
+  all.forEach(r=>{(r.categories||[]).forEach(c=>byCat[c]=(byCat[c]||0)+1);byArea[r.area]=(byArea[r.area]||0)+1;});
+  $("#statsCat").innerHTML=barRows(byCat)||emptyRow();
+  const areaSorted=Object.entries(byArea).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $("#statsArea").innerHTML=barRows(Object.fromEntries(areaSorted))||emptyRow();
+}
+const emptyRow=()=>'<div style="color:var(--muted);font-size:13px;text-align:center;padding:10px">尚無資料</div>';
+function barRows(obj){
+  const max=Math.max(1,...Object.values(obj));
+  return Object.entries(obj).map(([k,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+    <div style="width:96px;flex:none;font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k||"—")}</div>
+    <div style="flex:1;background:var(--surface-2);border-radius:6px;height:18px;overflow:hidden"><div style="width:${Math.round(v/max*100)}%;height:100%;background:var(--navy-2);border-radius:6px"></div></div>
+    <div style="width:34px;text-align:right;font-size:13px;font-weight:700;color:var(--navy-2)">${v}</div></div>`).join("");
+}
 
 function updateNet(){const on=navigator.onLine;$("#net").classList.toggle("off",!on);$("#netTxt").textContent=on?"已連線":"離線中";if(on)trySync();}
 async function refreshAll(){await updateSyncBar();$("#localCount").textContent=(await dbAll()).length;
@@ -1107,8 +1247,44 @@ function saveSettings(){const name=$("#s-name").value.trim(),unit=$("#s-unit").v
 /* ===================================================================
    綁定 + 啟動
    =================================================================== */
+/* ===================================================================
+   台帳匯入（Excel / CSV）
+   =================================================================== */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+async function ensureXLSX(){if(window.XLSX)return true;try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");return!!window.XLSX;}catch(e){return false;}}
+const PUMP_COL={"設備編號":"code","名稱":"name","型式":"type","驅動方式":"driver","口徑(吋)":"sizeInch","抽水量(cms)":"capacityCms","保管單位":"unit","維護廠商":"vendor","站房/預佈位置":"location","保養週期(天)":"intervalDays"};
+async function importPumps(file){
+  if(!navigator.onLine){toast("匯入需要網路載入解析元件","warn",3200);return;}
+  toast("讀取檔案中…");
+  if(!await ensureXLSX()){toast("解析元件載入失敗，請確認網路","err",3500);return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+    if(!rows.length){toast("檔案沒有資料列","warn");return;}
+    await loadPumps();
+    let added=0,updated=0,skip=0;
+    for(const row of rows){
+      const obj={};Object.keys(PUMP_COL).forEach(h=>{if(row[h]!==undefined)obj[PUMP_COL[h]]=String(row[h]).trim();});
+      if(!obj.code||!obj.name){skip++;continue;}
+      const exist=PUMPS.find(p=>(p.code||"").trim()===obj.code);
+      const pump=exist?{...exist}:{id:uid(),createdAt:Date.now()};
+      Object.assign(pump,obj);
+      pump.intervalDays=parseInt(obj.intervalDays,10)||CONFIG.PUMP.MAINT_INTERVAL_DAYS;
+      pump.synced=0;
+      await pmPut(pump);exist?updated++:added++;
+    }
+    await loadPumps();fillPumpDropdown();await renderPumps();
+    toast(`匯入完成：新增 ${added}、更新 ${updated}${skip?`、略過 ${skip}`:""}`,"ok",3500);
+    trySync();
+  }catch(e){toast("匯入失敗："+(e.message||e),"err",3500);}
+}
+
 function bind(){
   $$(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $$("#view-home .mod").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $("#brandHome").onclick=()=>go("home");
   $("#gpsBtn").onclick=locateMe;
   $("#mediaBtn").onclick=()=>$("#mediaInput").click();
   $("#mediaInput").onchange=e=>{addMedia([...e.target.files]);e.target.value="";};
@@ -1124,6 +1300,8 @@ function bind(){
   $("#goPumps").onclick=()=>go("pumps");
   $("#goDash").onclick=()=>go("dash");
   $("#newPumpBtn").onclick=()=>openPumpForm();
+  $("#importPumpBtn").onclick=()=>$("#importPumpInput").click();
+  $("#importPumpInput").onchange=e=>{if(e.target.files[0])importPumps(e.target.files[0]);e.target.value="";};
   $("#pcToPumps").onclick=()=>go("pumps");
   $("#pc-pump").onchange=onPumpPicked;
   $("#pc-start").onchange=computeResult;
@@ -1146,7 +1324,7 @@ function bind(){
     if(!n){$("#ob-err").textContent="請輸入姓名";return;}
     if(!u){$("#ob-err").textContent="請輸入單位";return;}
     SETTINGS.name=n;SETTINGS.unit=u;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));
-    $("#onboard").classList.remove("show");go("new");};
+    $("#onboard").classList.remove("show");go("home");};
   $("#ob-unit").addEventListener("keydown",e=>{if(e.key==="Enter")$("#ob-go").click();});
   $("#ob-name").addEventListener("keydown",e=>{if(e.key==="Enter")$("#ob-go").click();});
 }
@@ -1154,10 +1332,11 @@ function bind(){
   try{await openDB();}catch(e){alert("無法開啟本機資料庫，請改用 Chrome/Safari 並關閉無痕模式");return;}
   await loadProjects();await loadPumps();
   fillAreaDropdowns();fillProjectDropdowns();fillPumpDropdown();initCatChips();bind();updateNet();await refreshAll();
-  if(!SETTINGS.name || !SETTINGS.unit){   // 首次或缺單位：先填姓名＋單位 → 巡檢填報
+  if(!SETTINGS.name || !SETTINGS.unit){
     $("#ob-name").value=SETTINGS.name||"";$("#ob-unit").value=SETTINGS.unit||"";
     $("#onboard").classList.add("show");
-  }else{go("new");}
+  }else{go("home");}
+  pullShared();                                          // 開啟即同步共用清單
   if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>
