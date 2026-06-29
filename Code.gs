@@ -48,7 +48,7 @@ function doPost(e) {
     if (body.type === 'pump')   { savePump_(body.pump); return json_({ ok: true }); }
     if (body.type === 'pcheck') return json_({ ok: true, seq: savePcheck_(body.check) });
     if (body.type === 'project'){ saveProject_(body.project); return json_({ ok: true }); }
-    if (body.type === 'pull')   return json_({ ok: true, projects: readProjects_(), pumps: readPumps_() });
+    if (body.type === 'pull')   return json_({ ok: true, projects: readProjects_(), pumps: readPumps_(), records: readRecords_() });
     return json_({ ok: false, error: '未知的請求類型' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -218,6 +218,54 @@ function fmtD_(d) {
     return d.getFullYear() + '-' + m + '-' + day;
   }
   return String(d);
+}
+
+/* 讀取所有「巡檢紀錄」頁籤（排除系統頁籤），供各裝置拉回顯示 */
+function cell_(row, col, name) { var c = col[name]; return c === undefined ? '' : row[c]; }
+function readRecords_() {
+  var ss = getSS_(), out = [];
+  var skip = {}; skip[SHEET_PROJ] = 1; skip[SHEET_PUMP] = 1; skip[SHEET_PCHK] = 1;
+  var sheets = ss.getSheets();
+  for (var s = 0; s < sheets.length; s++) {
+    var sh = sheets[s], nm = sh.getName();
+    if (skip[nm] || sh.getLastRow() < 2) continue;
+    var lastCol = sh.getLastColumn();
+    var header = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+    var col = {}; for (var i = 0; i < header.length; i++) col[header[i]] = i;
+    if (col['localId'] === undefined) continue;   // 非紀錄頁籤
+    var data = sh.getRange(2, 1, sh.getLastRow() - 1, lastCol).getValues();
+    for (var r = 0; r < data.length; r++) {
+      var row = data[r];
+      if (!cell_(row, col, 'localId')) continue;
+      var cAt = cell_(row, col, '建立時間'), iAt = cell_(row, col, '最新改善日期');
+      out.push({
+        localId: String(cell_(row, col, 'localId')),
+        seq: cell_(row, col, '項次'),
+        projectName: cell_(row, col, '所屬專案'),
+        area: cell_(row, col, '行政區'),
+        landmark: cell_(row, col, '地標/位置'),
+        lat: cell_(row, col, '緯度'), lng: cell_(row, col, '經度'),
+        categories: String(cell_(row, col, '破損類別') || '').split('、').filter(String),
+        condition: cell_(row, col, '破損狀況'),
+        note: cell_(row, col, '其他描述'),
+        inspector: cell_(row, col, '巡檢人員'),
+        inspectorUnit: cell_(row, col, '填報單位'),
+        createdAt: cAt ? new Date(cAt).getTime() : Date.now(),
+        status: cell_(row, col, '狀態') || '待改善',
+        mediaLinks: cell_(row, col, '照片/影片連結'),
+        impCount: cell_(row, col, '改善次數') || 0,
+        cause: cell_(row, col, '致災原因'),
+        impUnit: cell_(row, col, '最新改善單位'), impMethod: cell_(row, col, '最新改善工法'),
+        impStatus: cell_(row, col, '最新改善後狀態'),
+        shortTerm: cell_(row, col, '短期改善作為'), midTerm: cell_(row, col, '中期改善作為'),
+        longTerm: cell_(row, col, '長期改善作為'),
+        deadline: fmtD_(cell_(row, col, '改善期限')), assignee: cell_(row, col, '負責人'),
+        impDate: iAt ? new Date(iAt).getTime() : null,
+        impLinks: cell_(row, col, '改善照片連結')
+      });
+    }
+  }
+  return out;
 }
 
 /* ---------- 工具 ---------- */

@@ -506,7 +506,7 @@
    =================================================================== */
 const CONFIG = {
   // ★ 管理者部署 Apps Script 後，把 /exec 網址貼在這裡一次即可，承辦人不用再設定 ★
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw9brLkbuzxy-FZ9pijK7GTf7PM1B0jURVqGpvO5hd2ekMrNR44Kc4qy1M5kTOsDEc_/exec",
+  APPS_SCRIPT_URL: "",
 
   // 臺南市 37 個行政區
   AREAS: ["中西區","東區","南區","北區","安平區","安南區","永康區","歸仁區","新化區","左鎮區",
@@ -641,10 +641,29 @@ function initPickMap(){
 function setPick(lat,lng,pan){
   draft.lat=+(+lat).toFixed(6);draft.lng=+(+lng).toFixed(6);
   if(!pickMarker){pickMarker=L.marker([lat,lng],{draggable:true}).addTo(pickMap);
-    pickMarker.on("dragend",()=>{const p=pickMarker.getLatLng();draft.lat=+p.lat.toFixed(6);draft.lng=+p.lng.toFixed(6);draft.acc=null;showCoord();});}
+    pickMarker.on("dragend",()=>{const p=pickMarker.getLatLng();draft.lat=+p.lat.toFixed(6);draft.lng=+p.lng.toFixed(6);draft.acc=null;showCoord();autoDistrict(draft.lat,draft.lng);});}
   else pickMarker.setLatLng([lat,lng]);
   if(pan)pickMap.setView([lat,lng],16);
   showCoord();$("#f-loc").classList.remove("err");
+  autoDistrict(draft.lat,draft.lng);
+}
+/* 依座標反查行政區並自動帶入（需連網；查不到則維持手動） */
+let _adToken=0;
+async function autoDistrict(lat,lng){
+  if(!navigator.onLine)return;
+  const sel=$("#i-area");const token=++_adToken;
+  try{
+    const u=`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=zh-TW&lat=${lat}&lon=${lng}`;
+    const r=await fetch(u,{headers:{"Accept":"application/json"}});
+    const j=await r.json();if(token!==_adToken)return;            // 已被新標點取代
+    const a=j.address||{};
+    const hay=[a.city_district,a.suburb,a.town,a.village,a.county,a.municipality,j.display_name].filter(Boolean).join(" ");
+    const hit=CONFIG.AREAS.find(area=>hay.indexOf(area)>=0);
+    if(hit && (!sel.value || draft.areaAuto)){
+      if(sel.value!==hit){sel.value=hit;toast(`已依座標帶入行政區：${hit}`,"ok",2000);}
+      draft.areaAuto=true;$("#f-area").classList.remove("err");
+    }
+  }catch(e){}
 }
 function showCoord(){const b=$("#coord");if(draft.lat==null){b.className="coord";return;}
   b.className="coord show";b.innerHTML=`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>已標記 ${draft.lat}, ${draft.lng}`+(draft.acc?`（±${draft.acc}m）`:"");}
@@ -674,6 +693,8 @@ function markerPopupHTML(r){
       +(cover?`<div style="text-align:center"><img src="${cover.data}" style="width:84px;height:64px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:10px;color:#6b7888">巡檢</span></div>`:"")
       +(impImg?`<div style="text-align:center"><img src="${impImg.data}" style="width:84px;height:64px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:10px;color:#157f3b">改善</span></div>`:"")
       +'</div>';
+  }else if(r.remoteMedia&&r.remoteMedia.length){
+    thumbs=`<div style="margin:6px 0"><a href="${r.remoteMedia[0]}" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#1f6fb8;text-decoration:none">📷 查看照片</a></div>`;
   }
   return `<b>${esc(r.categories[0]||"—")}</b>${r.categories.length>1?` +${r.categories.length-1}`:""}<br>`
     +(pn?`專案：${esc(pn)}<br>`:"")+`${esc(r.area)} ${esc(r.landmark||"")}<br>狀態：${esc(r.status)}`
@@ -699,7 +720,7 @@ async function renderQueryMarkers(){
 function initListMap(){
   if(!HAS_MAP){$("#listMap").innerHTML='<div style="height:100%;display:grid;place-items:center;color:#6b7888;font-size:13px;text-align:center;padding:14px">地圖元件未載入（請連網後重開）</div>';return;}
   if(!listMap){listMap=L.map("listMap").setView(CONFIG.MAP_CENTER,CONFIG.MAP_ZOOM);L.tileLayer(TILE_URL,TILE_OPT).addTo(listMap);}
-  setTimeout(()=>listMap.invalidateSize(),180);
+  setTimeout(()=>{listMap.invalidateSize();renderList();},200);
 }
 function renderListMap(data){
   if(!listMap)return;
@@ -818,11 +839,13 @@ async function renderImprove(){
 async function openDetail(id){
   const r=await dbGet(id);if(!r)return;
   const cover=r.media[0];
+  const rmtImg=(r.remoteMedia&&r.remoteMedia.length)?r.remoteMedia:null;
   const gallery=r.media.map(m=>`<div class="g">${m.type==="video"?`<video src="${m.data}" muted playsinline></video>`:`<img src="${m.data}">`}</div>`).join("");
-  const imps=r.improvements.map((im,i)=>`<div class="kv"><span class="k">改善 ${i+1}</span><span class="v"><b>${esc(im.unit)}</b>${im.signed?' <span style="color:var(--green);font-size:11px">✓已簽認</span>':''}<br>${im.cause?`<span style="color:var(--muted)">致災原因：</span>${esc(im.cause)}<br>`:""}工法：${esc(im.method)}<br>${im.shortTerm?`短期：${esc(im.shortTerm)}<br>`:""}${im.midTerm?`中期：${esc(im.midTerm)}<br>`:""}${im.longTerm?`長期：${esc(im.longTerm)}<br>`:""}${im.deadline?`期限：${fmtDate(im.deadline)}　`:""}${im.assignee?`負責人：${esc(im.assignee)}<br>`:""}<span style="color:var(--muted)">${fmtTime(im.date)}・${esc(im.status)}</span>${im.media&&im.media.length?`<div class="gallery">${im.media.map(m=>`<div class="g"><img src="${m.data}"></div>`).join("")}</div>`:""}</span></div>`).join("")||`<div class="kv"><span class="k">改善紀錄</span><span class="v" style="color:var(--muted)">尚無改善紀錄</span></div>`;
+  const rmtLinks=arr=>(arr&&arr.length)?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${arr.map((u,i)=>`<a href="${u}" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-bg);padding:6px 11px;border-radius:8px;text-decoration:none">📷 照片 ${i+1}</a>`).join("")}</div>`:"";
+  const imps=r.improvements.map((im,i)=>`<div class="kv"><span class="k">改善 ${i+1}</span><span class="v"><b>${esc(im.unit)}</b>${im.signed?' <span style="color:var(--green);font-size:11px">✓已簽認</span>':''}<br>${im.cause?`<span style="color:var(--muted)">致災原因：</span>${esc(im.cause)}<br>`:""}工法：${esc(im.method)}<br>${im.shortTerm?`短期：${esc(im.shortTerm)}<br>`:""}${im.midTerm?`中期：${esc(im.midTerm)}<br>`:""}${im.longTerm?`長期：${esc(im.longTerm)}<br>`:""}${im.deadline?`期限：${fmtDate(im.deadline)}　`:""}${im.assignee?`負責人：${esc(im.assignee)}<br>`:""}<span style="color:var(--muted)">${fmtTime(im.date)}・${esc(im.status)}</span>${im.media&&im.media.length?`<div class="gallery">${im.media.map(m=>`<div class="g"><img src="${m.data}"></div>`).join("")}</div>`:""}${rmtLinks(im.remoteMedia)}</span></div>`).join("")||`<div class="kv"><span class="k">改善紀錄</span><span class="v" style="color:var(--muted)">尚無改善紀錄</span></div>`;
   $("#view-detail").innerHTML=`
     <button class="btn btn-ghost" id="backBtn" style="margin-bottom:14px;width:auto;padding:0 16px;min-height:44px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>返回</button>
-    <div class="detail-cover">${cover?(cover.type==="video"?`<video src="${cover.data}" controls playsinline></video>`:`<img src="${cover.data}">`):""}</div>
+    ${cover?`<div class="detail-cover">${cover.type==="video"?`<video src="${cover.data}" controls playsinline></video>`:`<img src="${cover.data}">`}</div>`:""}
     <div class="card"><div class="card-b">
       <div style="display:flex;gap:8px;margin-bottom:6px"><span class="tag ${stCls(r.status)}">${r.status}</span><span class="tag ${r.synced?"sync":"unsync"}">${r.synced?"已上傳":"待上傳"}</span></div>
       <div class="kv"><span class="k">項次</span><span class="v">${r.seq?"#"+String(r.seq).padStart(3,"0"):"上傳後編號"}</span></div>
@@ -836,6 +859,7 @@ async function openDetail(id){
       <div class="kv"><span class="k">建立時間</span><span class="v">${fmtTime(r.createdAt)}</span></div>
       <div class="kv"><span class="k">巡檢人員</span><span class="v">${esc(r.inspector)}${r.inspectorUnit?`（${esc(r.inspectorUnit)}）`:""}</span></div>
       ${r.media.length>1?`<div class="kv"><span class="k">所有媒體</span><span class="v"><div class="gallery">${gallery}</div></span></div>`:""}
+      ${(!r.media.length&&rmtImg)?`<div class="kv"><span class="k">現場照片</span><span class="v">${rmtLinks(rmtImg)}</span></div>`:""}
     </div></div>
     <div class="card"><div class="card-h"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4h2M9 4l1.5 16h3L15 4M5 9h14"/></svg></span><h2>改善追蹤<span>IMPROVEMENT</span></h2></div>
       <div class="card-b">${imps}<button class="btn btn-amber" id="addImp" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增改善紀錄</button></div>
@@ -1168,7 +1192,7 @@ async function trySync(manual=false){
   if(done)toast(`已上傳 ${done} 筆${fail?`，${fail} 筆失敗`:""}`,fail?"warn":"ok");
   else if(fail&&manual)toast(`上傳失敗，請檢查網路（${fail} 筆）`,"err",3500);
 }
-/* 拉回共用清單（專案 + 抽水機台帳），讓各裝置同步 */
+/* 拉回共用清單（專案 + 抽水機台帳 + 巡檢紀錄），讓各裝置同步 */
 async function pullShared(){
   if(!CONFIG.APPS_SCRIPT_URL||!navigator.onLine)return;
   try{
@@ -1178,7 +1202,32 @@ async function pullShared(){
     for(const p of (out.projects||[]))if(!localPj.includes(p.id))await pjPut({...p,synced:1,deleted:false});
     const localPm=(await pmAll()).filter(p=>!p.synced).map(p=>p.id);
     for(const p of (out.pumps||[]))if(!localPm.includes(p.id))await pmPut({...p,synced:1});
-    await loadProjects();await loadPumps();fillProjectDropdowns();fillPumpDropdown();
+    await loadProjects();await loadPumps();
+    // 巡檢紀錄：把其他裝置上傳的紀錄合併進本機
+    const localMap={};(await dbAll()).forEach(r=>localMap[r.localId]=r);
+    for(const sr of (out.records||[])){
+      const loc=localMap[sr.localId];
+      if(loc && !loc.synced) continue;                 // 本機尚未上傳的編輯優先
+      const pid=(PROJECTS.find(p=>p.name===sr.projectName)||{}).id||"";
+      const remoteMedia=String(sr.mediaLinks||"").split("\n").filter(Boolean);
+      const improvements=(sr.impCount>0)?[{cause:sr.cause||"",unit:sr.impUnit||"",method:sr.impMethod||"",
+        status:sr.impStatus||sr.status,shortTerm:sr.shortTerm||"",midTerm:sr.midTerm||"",longTerm:sr.longTerm||"",
+        deadline:sr.deadline||"",assignee:sr.assignee||"",date:sr.impDate||sr.createdAt,
+        remoteMedia:String(sr.impLinks||"").split("\n").filter(Boolean),media:[]}]:[];
+      const merged={
+        localId:sr.localId,seq:sr.seq||null,projectId:pid,area:sr.area||"",landmark:sr.landmark||"",
+        lat:typeof sr.lat==="number"?sr.lat:(parseFloat(sr.lat)||null),lng:typeof sr.lng==="number"?sr.lng:(parseFloat(sr.lng)||null),
+        acc:null,categories:sr.categories||[],otherDamage:"",condition:sr.condition||"",note:sr.note||"",
+        inspector:sr.inspector||"",inspectorUnit:sr.inspectorUnit||"",createdAt:sr.createdAt||Date.now(),
+        status:sr.status||"待改善",synced:1,
+        media: loc&&loc.media&&loc.media.length?loc.media:[],
+        remoteMedia,
+        improvements: loc&&loc.improvements&&loc.improvements.length?loc.improvements:improvements
+      };
+      await dbPut(merged);
+    }
+    fillProjectDropdowns();fillPumpDropdown();
+    await refreshAll();
   }catch(e){}
 }
 async function updateSyncBar(n,spin){
@@ -1286,6 +1335,7 @@ function bind(){
   $$("#view-home .mod").forEach(b=>b.onclick=()=>go(b.dataset.go));
   $("#brandHome").onclick=()=>go("home");
   $("#gpsBtn").onclick=locateMe;
+  $("#i-area").onchange=()=>{draft.areaAuto=false;};
   $("#mediaBtn").onclick=()=>$("#mediaInput").click();
   $("#mediaInput").onchange=e=>{addMedia([...e.target.files]);e.target.value="";};
   $("#newSave").onclick=saveInspection;
