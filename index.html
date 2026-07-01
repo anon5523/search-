@@ -403,8 +403,22 @@
         <button class="btn btn-ghost" id="goDash">妥善率／保養到期儀表板</button>
       </div>
     </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 018-8M20 12a8 8 0 01-8 8"/><path d="M12 8v4l3 2"/></svg></span><h2>後端連線<span>SYNC</span></h2></div>
+      <div class="card-b">
+        <div class="field"><label class="lbl">後端網址（Apps Script /exec）<span class="req">*</span></label>
+          <input type="text" id="st-url" placeholder="https://script.google.com/macros/s/.../exec" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <div class="hint">同一單位所有裝置請貼「相同」的網址，才會看到彼此的資料。</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="stTest" style="flex:0 0 42%">連線診斷</button>
+          <button class="btn btn-primary" id="stSaveUrl">儲存並同步</button>
+        </div>
+        <div id="diag" style="margin-top:12px;font-size:13px;line-height:1.7;display:none;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px"></div>
+      </div>
+    </div>
     <div class="card"><div class="card-b" style="font-size:13px;color:var(--muted);line-height:1.6">
-      後端連線：<span class="ok-pill" id="connPill">檢查中…</span><br>
+      後端連線狀態：<span class="ok-pill" id="connPill">檢查中…</span><br>
       本機暫存 <b id="localCount" style="color:var(--ink-2)">0</b> 筆紀錄。清除瀏覽器資料前，請先確認皆已上傳。
     </div></div>
   </section>
@@ -506,7 +520,7 @@
    =================================================================== */
 const CONFIG = {
   // ★ 管理者部署 Apps Script 後，把 /exec 網址貼在這裡一次即可，承辦人不用再設定 ★
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxZIwT5IQA1FyFmvcW-LxekaBJDxvsDpD9x6Aag9BArN1ZBGS0GreBFmZ8IYw-KEnws/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxjgJXAl686dhWcLR3ZYPZdYEvePGPX_fev4MYflZR7HkPeRg7OGWa_uxbYGSB5uujF/exec",
 
   // 臺南市 37 個行政區
   AREAS: ["中西區","東區","南區","北區","安平區","安南區","永康區","歸仁區","新化區","左鎮區",
@@ -599,6 +613,8 @@ function compressImage(file){return new Promise(res=>{const img=new Image(),url=
 function fileToDataURL(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(file);});}
 
 let SETTINGS=JSON.parse(localStorage.getItem("inspectSettings")||"{}");
+/* 後端網址：優先用裝置設定，其次用程式內建 */
+function api(){return String(SETTINGS.backendUrl||api()||"").trim();}
 let draft={cats:[],media:[],lat:null,lng:null,acc:null};
 
 /* ===================================================================
@@ -1157,7 +1173,7 @@ async function renderDash(){
 let syncing=false;
 async function trySync(manual=false){
   if(syncing)return;
-  if(!CONFIG.APPS_SCRIPT_URL){if(manual)toast("後端尚未設定（請管理者於程式內填入網址）","warn",3500);return;}
+  if(!api()){if(manual)toast("後端尚未設定（請管理者於程式內填入網址）","warn",3500);return;}
   if(!navigator.onLine){if(manual)toast("目前離線，恢復網路後將自動上傳","warn",3200);return;}
   const pending=(await dbAll()).filter(r=>!r.synced);
   const others=(await pmAll()).filter(x=>!x.synced).length+(await pcAll()).filter(x=>!x.synced).length+(await pjAll()).filter(x=>!x.synced).length;
@@ -1166,7 +1182,7 @@ async function trySync(manual=false){
   let done=0,fail=0;
   for(const r of pending){try{
     const note=r.note+(r.otherDamage?`\n【其他破損】${r.otherDamage}`:"");
-    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    const resp=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({type:"record",record:{...r,note,projectName:projName(r.projectId)}})});
     const out=await resp.json();
     if(out&&out.ok){const f=await dbGet(r.localId);f.synced=1;if(out.seq)f.seq=out.seq;await dbPut(f);done++;}
@@ -1174,17 +1190,17 @@ async function trySync(manual=false){
   }catch(e){fail++;}}
   // 抽水機台帳
   for(const p of (await pmAll()).filter(x=>!x.synced)){try{
-    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pump",pump:p})});
+    const resp=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pump",pump:p})});
     const out=await resp.json();if(out&&out.ok){const f=pumpById(p.id);if(f){f.synced=1;await pmPut(f);}done++;}else throw 0;
   }catch(e){fail++;}}
   // 專案（共用清單）
   for(const p of (await pjAll()).filter(x=>!x.synced)){try{
-    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"project",project:p})});
+    const resp=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"project",project:p})});
     const out=await resp.json();if(out&&out.ok){if(p.deleted){await pjDel(p.id);}else{p.synced=1;await pjPut(p);}done++;}else throw 0;
   }catch(e){fail++;}}
   // 抽水機點檢
   for(const c of (await pcAll()).filter(x=>!x.synced)){try{
-    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pcheck",check:c})});
+    const resp=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pcheck",check:c})});
     const out=await resp.json();if(out&&out.ok){c.synced=1;await pcPut(c);done++;}else throw 0;
   }catch(e){fail++;}}
   await pullShared();                                   // 上傳後拉回共用清單
@@ -1194,9 +1210,9 @@ async function trySync(manual=false){
 }
 /* 拉回共用清單（專案 + 抽水機台帳 + 巡檢紀錄），讓各裝置同步 */
 async function pullShared(){
-  if(!CONFIG.APPS_SCRIPT_URL||!navigator.onLine)return;
+  if(!api()||!navigator.onLine)return;
   try{
-    const resp=await fetch(CONFIG.APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pull"})});
+    const resp=await fetch(api(),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pull"})});
     const out=await resp.json();if(!out||!out.ok)return;
     const localPj=(await pjAll()).filter(p=>!p.synced).map(p=>p.id);
     for(const p of (out.projects||[]))if(!localPj.includes(p.id))await pjPut({...p,synced:1,deleted:false});
@@ -1233,7 +1249,7 @@ async function pullShared(){
 async function updateSyncBar(n,spin){
   if(n===undefined){const a=(await dbAll()).filter(r=>!r.synced).length,b=(await pmAll()).filter(r=>!r.synced).length,c=(await pcAll()).filter(r=>!r.synced).length,d=(await pjAll()).filter(r=>!r.synced).length;n=a+b+c+d;}
   const bar=$("#syncbar");bar.classList.toggle("show",n>0);
-  $("#syncTxt").textContent=`有 ${n} 筆待上傳`+(CONFIG.APPS_SCRIPT_URL?"":"（後端未設定）");
+  $("#syncTxt").textContent=`有 ${n} 筆待上傳`+(api()?"":"（後端未設定）");
   bar.querySelector("svg").classList.toggle("spin",!!spin);
 }
 
@@ -1288,10 +1304,57 @@ async function refreshAll(){await updateSyncBar();$("#localCount").textContent=(
   if($("#view-improve").classList.contains("active"))renderImprove();}
 
 function fillSettings(){$("#s-name").value=SETTINGS.name||"";$("#s-unit").value=SETTINGS.unit||"";
-  const pill=$("#connPill");if(CONFIG.APPS_SCRIPT_URL){pill.className="ok-pill on";pill.textContent="已設定";}else{pill.className="ok-pill off";pill.textContent="未設定";}}
+  $("#st-url").value=SETTINGS.backendUrl||CONFIG.APPS_SCRIPT_URL||"";
+  const pill=$("#connPill");if(api()){pill.className="ok-pill on";pill.textContent="已設定";}else{pill.className="ok-pill off";pill.textContent="未設定";}}
 function saveSettings(){const name=$("#s-name").value.trim(),unit=$("#s-unit").value.trim();
   if(!name){toast("請填寫姓名","warn");return;}if(!unit){toast("請填寫單位","warn");return;}
   SETTINGS.name=name;SETTINGS.unit=unit;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));toast("已儲存","ok");}
+async function saveBackendUrl(){
+  let u=$("#st-url").value.trim();
+  if(u&&!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){
+    if(!confirm("網址格式看起來不像 Apps Script 的 /exec 網址，仍要儲存嗎？")) return;
+  }
+  SETTINGS.backendUrl=u;localStorage.setItem("inspectSettings",JSON.stringify(SETTINGS));
+  fillSettings();toast("已儲存後端網址，開始同步…","ok");
+  await runDiagnose(true);
+}
+/* 連線診斷：精準指出卡在哪一關 */
+async function runDiagnose(silent){
+  const box=$("#diag");box.style.display="block";
+  const url=api();
+  const line=(ok,txt)=>`<div style="display:flex;gap:8px"><span style="color:${ok===null?'var(--muted)':ok?'var(--green)':'var(--red)'};font-weight:800">${ok===null?'…':ok?'✔':'✗'}</span><span>${txt}</span></div>`;
+  if(!url){box.innerHTML=line(false,"尚未填入後端網址")+`<div style="color:var(--muted);margin-top:6px">請貼上 Apps Script 部署後的 /exec 網址。</div>`;return;}
+  if(!navigator.onLine){box.innerHTML=line(false,"目前離線，請連上網路後再試");return;}
+  box.innerHTML=line(null,"正在連線後端…");
+  try{
+    const t0=Date.now();
+    const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"pull"})});
+    const ms=Date.now()-t0;
+    let out;try{out=await resp.json();}catch(e){
+      box.innerHTML=line(true,"網址可連線")+line(false,`後端回應不是 JSON（HTTP ${resp.status}）`)
+        +`<div style="color:var(--muted);margin-top:6px">多半是<b>存取權限</b>設錯。請在部署時把「誰可以存取」設為<b>任何人</b>，並重新部署。</div>`;return;}
+    if(out&&out.ok&&(out.records!==undefined||out.projects!==undefined)){
+      const v=out.ver?`v${out.ver}`:"（無版本號＝舊版）";
+      const fresh=!!out.ver;
+      box.innerHTML=line(true,`連線成功（${ms}ms）後端 ${v}`)
+        +line(true,`專案 ${(out.projects||[]).length} 筆、抽水機 ${(out.pumps||[]).length} 台`)
+        +line(true,`雲端巡檢紀錄 ${(out.records||[]).length} 筆`)
+        +(fresh?"":line(false,"後端為舊版，請重新部署『新版本』（見下方說明）"))
+        +`<div style="color:var(--muted);margin-top:6px">若雲端紀錄有數字但本機看不到，按下方「立即同步」即可拉回。</div>`
+        +`<button class="btn btn-primary" id="diagSync" style="margin-top:10px">立即同步（拉回雲端資料）</button>`;
+      $("#diagSync").onclick=async()=>{$("#diagSync").textContent="同步中…";await trySync(true);await runDiagnose(true);};
+    }else if(out&&out.error&&/未知的請求類型|類型/.test(out.error)){
+      box.innerHTML=line(true,"網址可連線")+line(false,"後端是『舊版』，看不懂『拉回(pull)』指令")
+        +`<div style="color:var(--muted);margin-top:6px">請把最新 <b>Code.gs</b> 貼上，並<b>重新部署新版本</b>：Apps Script → 部署 → 管理部署作業 → ✎ 編輯 → 版本選「<b>新版本</b>」→ 部署。網址不會變。</div>`;
+    }else{
+      box.innerHTML=line(true,"網址可連線")+line(false,`後端回應：${out&&out.error?esc(out.error):"未知錯誤"}`);
+    }
+  }catch(e){
+    box.innerHTML=line(false,"無法連線到後端")
+      +`<div style="color:var(--muted);margin-top:6px">可能原因：網址錯誤、未部署、或存取權限非「任何人」。請確認 /exec 網址並重新部署。</div>`;
+  }
+  if(!silent)toast("診斷完成","ok");
+}
 
 /* ===================================================================
    綁定 + 啟動
@@ -1349,6 +1412,8 @@ function bind(){
   $$("#pcheckSeg button").forEach(b=>b.onclick=()=>go(b.dataset.go));
   $("#goPumps").onclick=()=>go("pumps");
   $("#goDash").onclick=()=>go("dash");
+  $("#stSaveUrl").onclick=saveBackendUrl;
+  $("#stTest").onclick=()=>runDiagnose(false);
   $("#newPumpBtn").onclick=()=>openPumpForm();
   $("#importPumpBtn").onclick=()=>$("#importPumpInput").click();
   $("#importPumpInput").onchange=e=>{if(e.target.files[0])importPumps(e.target.files[0]);e.target.value="";};
@@ -1386,6 +1451,7 @@ function bind(){
     $("#ob-name").value=SETTINGS.name||"";$("#ob-unit").value=SETTINGS.unit||"";
     $("#onboard").classList.add("show");
   }else{go("home");}
+  if(!api())setTimeout(()=>toast("尚未設定後端網址，請到「設定 → 後端連線」填入才能跨裝置同步","warn",4500),800);
   pullShared();                                          // 開啟即同步共用清單
   if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
